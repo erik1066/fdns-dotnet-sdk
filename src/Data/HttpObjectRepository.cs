@@ -21,6 +21,7 @@ namespace Foundation.Sdk.Data
         private readonly Regex _regexCollectionName = new Regex(@"^[a-zA-Z0-9\.]*$");
         private readonly HttpClient _client = null;
         private readonly ILogger<HttpObjectRepository<T>> _logger;
+        private readonly string _routePrefix = string.Empty;
 
         private string SendingServiceName { get; } = string.Empty;
         private JsonSerializerSettings JsonSerializerSettings { get; }
@@ -32,7 +33,8 @@ namespace Foundation.Sdk.Data
         /// <param name="clientFactory">The Http client factory to use for creating Http clients</param>
         /// <param name="logger">The logger to use</param>
         /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
-        public HttpObjectRepository(IHttpClientFactory clientFactory, ILogger<HttpObjectRepository<T>> logger, string appName)
+        /// <param name="routePrefix">Optional route parts to use after the hostname</param>
+        public HttpObjectRepository(IHttpClientFactory clientFactory, ILogger<HttpObjectRepository<T>> logger, string appName, string routePrefix = "")
         {
             #region Input Validation
             if (clientFactory == null)
@@ -47,10 +49,19 @@ namespace Foundation.Sdk.Data
             {
                 throw new ArgumentNullException(nameof(appName));
             }
+            if (routePrefix == null)
+            {
+                throw new ArgumentNullException(nameof(routePrefix));
+            }
+            if (!string.IsNullOrEmpty(routePrefix) && !_regexHostName.IsMatch(routePrefix))
+            {
+                throw new ArgumentException(nameof(routePrefix));
+            }
             #endregion // Input Validation
 
             _client = clientFactory.CreateClient($"{appName}-{Common.OBJECT_SERVICE_NAME}");
             _logger = logger;
+            _routePrefix = routePrefix;
             SendingServiceName = appName;
             JsonSerializerSettings = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore, ContractResolver = new CamelCasePropertyNamesContractResolver() };
         }
@@ -61,8 +72,9 @@ namespace Foundation.Sdk.Data
         /// <param name="clientFactory">The Http client factory to use for creating Http clients</param>
         /// <param name="logger">The logger to use</param>
         /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
+        /// <param name="routePrefix">Optional route parts to use</param>
         /// <param name="jsonSerializerSettings">Customer Json serializer</param>
-        public HttpObjectRepository(IHttpClientFactory clientFactory, ILogger<HttpObjectRepository<T>> logger, string appName, JsonSerializerSettings jsonSerializerSettings) : this(clientFactory, logger, appName)
+        public HttpObjectRepository(IHttpClientFactory clientFactory, ILogger<HttpObjectRepository<T>> logger, string appName, JsonSerializerSettings jsonSerializerSettings, string routePrefix = "") : this(clientFactory, logger, appName, routePrefix)
         {
             JsonSerializerSettings = jsonSerializerSettings;
         }
@@ -311,7 +323,7 @@ namespace Foundation.Sdk.Data
 
             try
             {
-                var url = $"distinct/{fieldName}";
+                var url = $"{GetStandardUrl("distinct")}/{fieldName}";
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<List<string>> result = null;
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, payload);
@@ -352,8 +364,22 @@ namespace Foundation.Sdk.Data
             }
         }
 
-        private string GetStandardItemUrl(string id) => $"{id}";
+        private string GetRoutePrefix()
+        {
+            if (string.IsNullOrEmpty(_routePrefix)) 
+            {
+                return string.Empty;
+            }
+            else 
+            {
+                return $"{_routePrefix}/";
+            }
+        }
 
-        private string GetStandardCollectionUrl() => $"";
+        private string GetStandardItemUrl(string id) => $"{GetRoutePrefix()}{id}";
+
+        private string GetStandardCollectionUrl() => $"{GetRoutePrefix()}";
+
+        private string GetStandardUrl(string routePart) => $"{GetRoutePrefix()}{routePart}";
     }
 }
