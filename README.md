@@ -1,4 +1,8 @@
 # FDNS .NET Core SDK
+
+
+[![NuGet version (Foundation.Sdk)](https://img.shields.io/nuget/v/Foundation.Sdk.svg?style=flat-square)](https://www.nuget.org/packages/Foundation.Sdk/)
+
 A .NET Core SDK for interacting with the [Foundation Services](https://github.com/CDCGov/fdns). The Foundation Services are a collection of general purpose, open source microservices authored by the U.S. Centers for Disease Control and Prevention.
 
 ## Purpose
