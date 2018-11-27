@@ -6,7 +6,7 @@ You will need to have the following software installed to use this SDK:
 - [Visual Studio Code](https://code.visualstudio.com/) or [Visual Studio](https://visualstudio.microsoft.com/)
 - [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) (only if using Visual Studio Code)
 
-There are many tutorials that show how to create a basic .NET Core 2.x web application. We will avoid repeating those tutorials here. Once you have created a .NET Core 2.x application, you must include a package reference to the FDNS .NET Core SDK. To do this in in **Visual Studio Code**, open the application's `.csproj` file and add a package reference as shown below:
+There are many tutorials that show how to create a basic .NET Core 2.x web application. We will avoid repeating those tutorials here for the sake of brevity. Once you have created a .NET Core 2.x application, you must include the [FDNS .NET Core SDK NuGet package](https://www.nuget.org/packages/Foundation.Sdk). To do this in in **Visual Studio Code**, open the application's `.csproj` file and add a package reference as shown below:
 
 ```xml
 <ItemGroup>
@@ -18,7 +18,7 @@ You may be prompted to restore packages after saving the `.csproj` file. You may
 
 See [Package references in project files](https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files) for more information.
 
-To add a package reference in **Visual Studio**, see [Quickstart: Install and use a package in Visual Studio](https://docs.microsoft.com/en-us/nuget/quickstart/install-and-use-a-package-in-visual-studio).
+To add a NuGet package in **Visual Studio**, see [Quickstart: Install and use a package in Visual Studio](https://docs.microsoft.com/en-us/nuget/quickstart/install-and-use-a-package-in-visual-studio).
 
 
 
