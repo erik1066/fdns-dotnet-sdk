@@ -4,11 +4,11 @@ The [FDNS Indexing microservice](https://github.com/CDCGov/fdns-ms-indexing) is 
 
 You will need to have the following software installed to follow the instructions in this document:
 
-- [Visual Studio Code](https://code.visualstudio.com/)
-- [C# Extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp)
 - [.NET Core SDK 2.1](https://www.microsoft.com/net/download)
+- [Visual Studio Code](https://code.visualstudio.com/) or [Visual Studio](https://visualstudio.microsoft.com/)
+- [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) (only if using Visual Studio Code)
 
-> This guide assumes you've followed the [FDNS Object guick-start guide](guide01-using-fdns-object-microservice.md) and are running the FDNS Indexing microservice at `http://localhost:8084/api/1.0` and the FDNS Object microservice at `http://localhost:8083/api/1.0`. If you haven't done these things, please do so now before continuing!
+> This guide assumes you've followed the [FDNS Object guick-start guide](guide01-using-fdns-object-microservice.md) and are running the FDNS Indexing microservice at `http://localhost:8084/api/1.0` and the FDNS Object microservice at `http://localhost:8083/api/1.0`. If you haven't done these things, please do so now before continuing
 
 Let's assume we have a requirement to index `Customer` objects that are stored in our MongoDB database. We may be asked to implement this kind of indexing to improve lookup performance when running our software at scale, as Elasticsearch has performance benefits over MongoDB in certain scenarios. Note that MongoDB is what's running underneath the [FDNS Object microservice](https://github.com/CDCGov/fdns-ms-object), which is what we used to implement our database CRUD operations in [the first getting started guide](guide01-using-fdns-object-microservice.md).
 

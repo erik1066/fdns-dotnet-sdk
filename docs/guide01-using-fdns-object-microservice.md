@@ -8,9 +8,9 @@ The latter is intended for scenarios where schemas are unknown at runtime and/or
 
 You will need to have the following software installed to follow the instructions in this document:
 
-- [Visual Studio Code](https://code.visualstudio.com/)
-- [C# Extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp)
-- [.NET Core SDK 2.1](https://www.microsoft.com/net/download)
+- [.NET Core SDK 2.x](https://www.microsoft.com/net/download)
+- [Visual Studio Code](https://code.visualstudio.com/) or [Visual Studio](https://visualstudio.microsoft.com/)
+- [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) (only if using Visual Studio Code)
 
 > This guide assumes you're already running the FDNS Object microservice at `http://localhost:8083/api/1.0`. If not, you will receive errors when trying to use the code below.
 
