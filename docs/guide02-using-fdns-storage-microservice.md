@@ -33,9 +33,10 @@ public sealed class Customer
 Open `Startup.cs` and add the following lines:
 
 ```cs
+var applicationName = "bookstore";
 services.AddHttpClient($"{applicationName}-{Common.STORAGE_SERVICE_NAME}", client =>
 {
-    client.BaseAddress = new Uri($"{storageServiceUrl}/");
+    client.BaseAddress = new Uri("http://localhost:8082/api/1.0/");
     client.DefaultRequestHeaders.Add("X-Correlation-App", applicationName);
 });
 
