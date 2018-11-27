@@ -10,9 +10,10 @@
     <Company />
     <Title>FDNS .NET Core SDK</Title>
     <Description>.NET Core SDK for interacting with the Foundation Services</Description>
+    <PackageDescription>A .NET Core SDK for interacting with the Foundation Services. The Foundation Services are a collection of general purpose, open source microservices authored by the U.S. Centers for Disease Control and Prevention.</PackageDescription>
     <Copyright>Copyright © 2018 Erik Knudsen</Copyright>
-    <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
-    <PackageTags>microservice sdk fdns</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageTags>microservice sdk fdns dotnet csharp cdc</PackageTags>
     <PackageProjectUrl>https://github.com/erik1066/fdns-dotnet-sdk</PackageProjectUrl>
     <RepositoryUrl>https://github.com/erik1066/fdns-dotnet-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
