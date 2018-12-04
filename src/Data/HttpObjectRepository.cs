@@ -135,7 +135,7 @@ namespace Foundation.Sdk.Data
             #endregion // Input Validation
 
             int sort = sortDescending ? 1 : -1;
-            var url = $"{GetStandardCollectionUrl()}/find?from={from}&size={size}&sort={sortFieldName}&order={sort}";
+            var url = $"{GetStandardCollectionUrl()}find?from={from}&size={size}&sort={sortFieldName}&order={sort}";
 
             try
             {
@@ -196,7 +196,7 @@ namespace Foundation.Sdk.Data
         {
             try
             {
-                var url = $"{GetStandardCollectionUrl()}/count";
+                var url = $"{GetStandardCollectionUrl()}count";
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<string> result = null;
 
@@ -372,7 +372,7 @@ namespace Foundation.Sdk.Data
             }
             else 
             {
-                return $"{_routePrefix}/";
+                return _routePrefix.EndsWith("/") ? _routePrefix : $"{_routePrefix}/";
             }
         }
 

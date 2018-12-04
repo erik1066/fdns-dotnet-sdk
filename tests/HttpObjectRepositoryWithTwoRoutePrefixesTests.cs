@@ -10,11 +10,11 @@ using RichardSzalay.MockHttp;
 
 namespace Foundation.Sdk.Tests
 {
-    public class HttpObjectRepositoryTests : IClassFixture<ObjectFixture>
+    public class HttpObjectRepositoryWithTwoRoutePrefixesTests : IClassFixture<ObjectServiceWithRoutePrefixesFixture>
     {
-        ObjectFixture _objectFixture;
+        ObjectServiceWithRoutePrefixesFixture _objectFixture;
 
-        public HttpObjectRepositoryTests(ObjectFixture fixture)
+        public HttpObjectRepositoryWithTwoRoutePrefixesTests(ObjectServiceWithRoutePrefixesFixture fixture)
         {
             this._objectFixture = fixture;
         }
@@ -22,7 +22,7 @@ namespace Foundation.Sdk.Tests
         [Fact]
         public void Get()
         {
-            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests");
+            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
 
             ServiceResult<Customer> result = repo.GetAsync("1").Result;
             Customer customerResult = result.Response;
@@ -44,7 +44,7 @@ namespace Foundation.Sdk.Tests
                 Age = 39
             };
 
-            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests");
+            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
 
             ServiceResult<Customer> result = repo.ReplaceAsync("2", customer).Result;
             Customer customerResult = result.Response;
@@ -59,7 +59,7 @@ namespace Foundation.Sdk.Tests
         [Fact]
         public void Count()
         {
-            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests");
+            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
 
             ServiceResult<int> result = repo.GetCountAsync(string.Empty).Result;
             int count = result.Response;
@@ -72,7 +72,7 @@ namespace Foundation.Sdk.Tests
         [Fact]
         public void Find()
         {
-            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests");
+            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
 
             ServiceResult<SearchResults<Customer>> result = repo.FindAsync(0, -1, string.Empty, string.Empty, true).Result;
             SearchResults<Customer> searchResults = result.Response;
@@ -81,51 +81,15 @@ namespace Foundation.Sdk.Tests
             Assert.True(result.Elapsed.TotalMilliseconds > 0);
             Assert.Equal("Object", result.ServiceName);
         }
-
-        [Fact]
-        public void Delete()
-        {
-            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests");
-
-            ServiceResult<DeleteResult> result = repo.DeleteAsync("3").Result;
-            DeleteResult deleteResult = result.Response;
-            Assert.Equal(HttpStatusCode.OK, result.Code);
-            Assert.Equal(1, deleteResult.Deleted);
-            Assert.True(deleteResult.Success);
-            Assert.True(result.Elapsed.TotalMilliseconds > 0);
-            Assert.Equal("Object", result.ServiceName);
-        }
-
-        [Fact]
-        public void Insert_with_Id()
-        {
-            var customer = new Customer()
-            {
-                FirstName = "Mary",
-                LastName = "Jane",
-                Age = 39
-            };
-
-            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests");
-
-            ServiceResult<Customer> result = repo.InsertAsync("4", customer).Result;
-            Customer customerResult = result.Response;
-            Assert.Equal(HttpStatusCode.Created, result.Code);
-            Assert.Equal("Mary", customerResult.FirstName);
-            Assert.Equal("Jane", customerResult.LastName);
-            Assert.Equal(39, customerResult.Age);
-            Assert.True(result.Elapsed.TotalMilliseconds > 0);
-            Assert.Equal("Object", result.ServiceName);
-        }
     }
 
-    public class ObjectFixture : IDisposable
+    public class ObjectServiceWithRoutePrefixesFixture : IDisposable
     {
         public ILogger<HttpObjectRepository<Customer>> Logger { get; private set; }
         public HttpClient Client { get; private set; }
         public IHttpClientFactory ClientFactory { get; private set; }
 
-        public ObjectFixture()
+        public ObjectServiceWithRoutePrefixesFixture()
         {
             Logger = new Mock<ILogger<HttpObjectRepository<Customer>>>().Object;
 
@@ -133,26 +97,20 @@ namespace Foundation.Sdk.Tests
 
             // Setup a respond for the user api (including a wildcard in the URL)
             mockHttp.When("http://localhost/bookstore/customer/1")
-                .Respond(HttpStatusCode.OK, "application/json", "{ \"firstName\" : \"John\", \"lastName\" : \"Smith\", \"age\" : 32 }");
+                .Respond("application/json", "{ \"firstName\" : \"John\", \"lastName\" : \"Smith\", \"age\" : 32 }");
 
             mockHttp.When("http://localhost/bookstore/customer/2")
-                .Respond(HttpStatusCode.OK, "application/json", "{ \"firstName\" : \"Mary\", \"lastName\" : \"Jane\", \"age\" : 39 }");
+                .Respond("application/json", "{ \"firstName\" : \"Mary\", \"lastName\" : \"Jane\", \"age\" : 39 }");
             
             mockHttp.When("http://localhost/bookstore/customer/count")
-                .Respond(HttpStatusCode.OK, "application/json", "{ \"count\": 2 }");
+                .Respond("application/json", "{ \"count\": 2 }");
 
             mockHttp.When("http://localhost/bookstore/customer/find?from=0&order=1&size=-1")
-                .Respond(HttpStatusCode.OK, "application/json", "{ \"total\": 2, \"items\": [ { \"firstName\": \"John\", \"lastName\": \"Smith\", \"_id\": \"1\", \"age\": 32 }, { \"firstName\": \"Mary\", \"lastName\": \"Jane\", \"_id\": \"2\", \"age\": 39 } ] }");
-
-            mockHttp.When("http://localhost/bookstore/customer/3")
-                .Respond(HttpStatusCode.OK, "application/json", "{ \"deleted\": 1, \"success\": true }");
-            
-            mockHttp.When("http://localhost/bookstore/customer/4")
-                .Respond(HttpStatusCode.Created, "application/json", "{ \"firstName\" : \"Mary\", \"lastName\" : \"Jane\", \"age\" : 39 }");
+                .Respond("application/json", "{ \"total\": 2, \"items\": [ { \"firstName\": \"John\", \"lastName\": \"Smith\", \"_id\": \"1\", \"age\": 32 }, { \"firstName\": \"Mary\", \"lastName\": \"Jane\", \"_id\": \"2\", \"age\": 39 } ] }");
 
             // Inject the handler or client into your application code
             var client = mockHttp.ToHttpClient();
-            client.BaseAddress = new Uri("http://localhost/bookstore/customer/");
+            client.BaseAddress = new Uri("http://localhost/");
             Client = client;
 
             var mock = new Mock<IHttpClientFactory>();
