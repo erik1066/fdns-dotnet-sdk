@@ -9,17 +9,17 @@ namespace Foundation.Sdk.Data
     /// </summary>
     public interface IObjectRepository<T>
     {
-        Task<ServiceResult<T>> GetAsync(string id, Dictionary<string, string> headers = null);
+        Task<ServiceResult<T>> GetAsync(object id, Dictionary<string, string> headers = null);
 
         Task<ServiceResult<SearchResults<T>>> FindAsync(int from, int size, string sortFieldName, string payload, bool sortDescending = true, Dictionary<string, string> headers = null);
 
-        Task<ServiceResult<T>> ReplaceAsync(string id, T entity, Dictionary<string, string> headers = null);
+        Task<ServiceResult<T>> ReplaceAsync(object id, T entity, Dictionary<string, string> headers = null);
 
         Task<ServiceResult<int>> GetCountAsync(string payload, Dictionary<string, string> headers = null);
 
-        Task<ServiceResult<DeleteResult>> DeleteAsync(string id, Dictionary<string, string> headers = null);
+        Task<ServiceResult<DeleteResult>> DeleteAsync(object id, Dictionary<string, string> headers = null);
 
-        Task<ServiceResult<T>> InsertAsync(string id, T entity, Dictionary<string, string> headers = null);
+        Task<ServiceResult<T>> InsertAsync(object id, T entity, Dictionary<string, string> headers = null);
 
         Task<ServiceResult<bool>> DeleteCollectionAsync(Dictionary<string, string> headers = null);
 

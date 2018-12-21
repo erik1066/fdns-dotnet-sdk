@@ -21,6 +21,7 @@ namespace Foundation.Sdk
         public const string INSERT_AUTHORIZATION_NAME = "insert";
         public const string UPDATE_AUTHORIZATION_NAME = "update";
         public const string DELETE_AUTHORIZATION_NAME = "delete";
+        public const string CORRELATION_ID_HEADER = "X-Correlation-Id";
 
         public static async Task<ServiceResult<T>> GetHttpResultAsServiceResultAsync<T>(HttpResponseMessage response, string serviceName, string uri, Dictionary<string, string> headers)
         {
@@ -64,11 +65,11 @@ namespace Foundation.Sdk
             }
 
             string correlationId = GetCorrelationIdFromHeaders(headers);
-            var result = new ServiceResult<T>(uri, sw.Elapsed, objectValue, serviceName, response.IsSuccessStatusCode, response.StatusCode, correlationId, message);
+            var result = new ServiceResult<T>(uri, sw.Elapsed, objectValue, serviceName, response.StatusCode, correlationId, message);
             return result;
         }
 
-        public static string GetCorrelationIdFromHeaders(Dictionary<string, string> headers) => headers != null ? (headers.ContainsKey("X-Correlation-Id") ? headers["X-Correlation-Id"] : string.Empty) : string.Empty;
+        public static string GetCorrelationIdFromHeaders(Dictionary<string, string> headers) => headers != null ? (headers.ContainsKey(CORRELATION_ID_HEADER) ? headers[CORRELATION_ID_HEADER] : string.Empty) : string.Empty;
 
         public static void AddHttpRequestHeaders(HttpRequestMessage requestMessage, string senderName, string destinationName, Dictionary<string, string> headers)
         {
@@ -82,10 +83,10 @@ namespace Foundation.Sdk
                     requestMessage.Headers.Add(kvp.Key, kvp.Value);
                 }
 
-                if (!headers.ContainsKey("X-Correlation-Id"))
+                if (!headers.ContainsKey(CORRELATION_ID_HEADER))
                 {
                     string correlationId = System.Guid.NewGuid().ToString().Substring(0, 18);
-                    requestMessage.Headers.Add("X-Correlation-Id", correlationId);
+                    requestMessage.Headers.Add(CORRELATION_ID_HEADER, correlationId);
                 }
             }
         }

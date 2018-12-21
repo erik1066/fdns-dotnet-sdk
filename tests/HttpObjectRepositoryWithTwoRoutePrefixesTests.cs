@@ -25,7 +25,7 @@ namespace Foundation.Sdk.Tests
             var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
 
             ServiceResult<Customer> result = repo.GetAsync("1").Result;
-            Customer customerResult = result.Response;
+            Customer customerResult = result.Value;
             Assert.Equal(HttpStatusCode.OK, result.Code);
             Assert.Equal("John", customerResult.FirstName);
             Assert.Equal("Smith", customerResult.LastName);
@@ -47,7 +47,7 @@ namespace Foundation.Sdk.Tests
             var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
 
             ServiceResult<Customer> result = repo.ReplaceAsync("2", customer).Result;
-            Customer customerResult = result.Response;
+            Customer customerResult = result.Value;
             Assert.Equal(HttpStatusCode.OK, result.Code);
             Assert.Equal("Mary", customerResult.FirstName);
             Assert.Equal("Jane", customerResult.LastName);
@@ -62,7 +62,7 @@ namespace Foundation.Sdk.Tests
             var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
 
             ServiceResult<int> result = repo.GetCountAsync(string.Empty).Result;
-            int count = result.Response;
+            int count = result.Value;
             Assert.Equal(HttpStatusCode.OK, result.Code);
             Assert.Equal(2, count);
             Assert.True(result.Elapsed.TotalMilliseconds > 0);
@@ -75,7 +75,7 @@ namespace Foundation.Sdk.Tests
             var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
 
             ServiceResult<SearchResults<Customer>> result = repo.FindAsync(0, -1, string.Empty, string.Empty, true).Result;
-            SearchResults<Customer> searchResults = result.Response;
+            SearchResults<Customer> searchResults = result.Value;
             Assert.Equal(HttpStatusCode.OK, result.Code);
             Assert.Equal(2, searchResults.Items.Count);
             Assert.True(result.Elapsed.TotalMilliseconds > 0);

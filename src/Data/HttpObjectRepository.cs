@@ -85,9 +85,9 @@ namespace Foundation.Sdk.Data
         /// <param name="id">The id of the object to retrieve. This parameter must match a property on the object with a key of "id" (all lowercase).</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<T>> GetAsync(string id, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<T>> GetAsync(object id, Dictionary<string, string> headers = null)
         {
-            var url = GetStandardItemUrl(id);
+            var url = GetStandardItemUrl(id.ToString());
             try
             {
                 headers = Common.NormalizeHeaders(headers);
@@ -163,9 +163,9 @@ namespace Foundation.Sdk.Data
         /// <param name="entity">The entity that will replace the object with the specified id</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<T>> ReplaceAsync(string id, T entity, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<T>> ReplaceAsync(object id, T entity, Dictionary<string, string> headers = null)
         {
-            var url = GetStandardItemUrl(id);
+            var url = GetStandardItemUrl(id.ToString());
             try
             {
                 var payload = SerializeEntity(entity);
@@ -206,10 +206,10 @@ namespace Foundation.Sdk.Data
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
 
-                var dictionary = JsonConvert.DeserializeObject<System.Collections.Generic.Dictionary<string, string>>(result.Response);
+                var dictionary = JsonConvert.DeserializeObject<System.Collections.Generic.Dictionary<string, string>>(result.Value);
                 var kv = dictionary.FirstOrDefault(k => k.Key.Equals("count", StringComparison.OrdinalIgnoreCase));
                 int.TryParse(kv.Value, out int count);
-                var typedResult = new ServiceResult<int>(url, result.Elapsed, count, Common.OBJECT_SERVICE_NAME, result.IsSuccess, result.Code, Common.GetCorrelationIdFromHeaders(headers));
+                var typedResult = new ServiceResult<int>(url, result.Elapsed, count, Common.OBJECT_SERVICE_NAME, result.Code, Common.GetCorrelationIdFromHeaders(headers));
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get count completed on {_client.BaseAddress} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
                 return typedResult;
             }
@@ -226,9 +226,9 @@ namespace Foundation.Sdk.Data
         /// <param name="id">The id of the object. This parameter must match a property on the object with a key of "id" (all lowercase).</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of bool</returns>
-        public async Task<ServiceResult<DeleteResult>> DeleteAsync(string id, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<DeleteResult>> DeleteAsync(object id, Dictionary<string, string> headers = null)
         {
-            var url = GetStandardItemUrl(id);
+            var url = GetStandardItemUrl(id.ToString());
             try
             {
                 headers = Common.NormalizeHeaders(headers);
@@ -255,9 +255,9 @@ namespace Foundation.Sdk.Data
         /// <param name="entity">The entity to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<T>> InsertAsync(string id, T entity, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<T>> InsertAsync(object id, T entity, Dictionary<string, string> headers = null)
         {
-            var url = GetStandardItemUrl(id);
+            var url = GetStandardItemUrl(id.ToString());
             try
             {
                 var payload = SerializeEntity(entity);

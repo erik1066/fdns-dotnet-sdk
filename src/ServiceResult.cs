@@ -10,15 +10,24 @@ namespace Foundation.Sdk
     public sealed class ServiceResult<T>
     {
         public string URI { get; } = string.Empty;
-        public T Response { get; }
+        public T Value { get; }
         public string ServiceName { get; } = string.Empty;
-        public bool IsSuccess { get; }
-        public HttpStatusCode Code { get; }
+        public bool IsSuccess 
+        {
+            get 
+            {
+                int code = (int) Code;
+                if (code >= 200 && code <= 299) return true;
+                else return false;
+            }
+        }
+        public HttpStatusCode Code { get; internal set; }
         public TimeSpan Elapsed { get; }
         public string CorrelationId { get; }
-        public string Message { get; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string Operation { get; set; } = string.Empty;
 
-        public ServiceResult(string uri, TimeSpan elapsed, T response, string serviceName, bool isSuccess, HttpStatusCode code, string correlationId, string message = "")
+        public ServiceResult(string uri, TimeSpan elapsed, T value, string serviceName, HttpStatusCode code, string correlationId, string message = "")
         {
             #region Input Validation
             if (string.IsNullOrEmpty(uri))
@@ -33,7 +42,7 @@ namespace Foundation.Sdk
             {
                 throw new ArgumentNullException(nameof(correlationId));
             }
-            if (elapsed.TotalMilliseconds < 0)
+            if (elapsed != null && elapsed.TotalMilliseconds < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(elapsed));
             }
@@ -44,9 +53,8 @@ namespace Foundation.Sdk
             #endregion // Input Validation
 
             URI = uri;
-            Response = response;
+            Value = value;
             ServiceName = serviceName;
-            IsSuccess = isSuccess;
             Code = code;
             Elapsed = elapsed;
             CorrelationId = correlationId;
