@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -14,14 +15,16 @@ namespace Foundation.Sdk.Data
     /// <summary>
     /// Class for interacting with the FDNS Object microservice (see https://github.com/CDCgov/fdns-ms-object) over HTTP using strongly-typed objects
     /// </summary>
-    public sealed class HttpObjectRepository<T> : IObjectRepository<T>
+    public sealed class HttpObjectService<T> : IObjectService<T>
     {
         #region Members
         private readonly Regex _regexHostName = new Regex(@"^[a-zA-Z0-9:\.\-/]*$");
         private readonly Regex _regexCollectionName = new Regex(@"^[a-zA-Z0-9\.]*$");
         private readonly HttpClient _client = null;
-        private readonly ILogger<HttpObjectRepository<T>> _logger;
-        private readonly string _routePrefix = string.Empty;
+        private readonly ILogger<HttpObjectService<T>> _logger;
+        private readonly string _databaseName = string.Empty;
+        private readonly string _collectionName = string.Empty;
+        private readonly bool _isStringType = typeof(T) == typeof(String);
 
         private string SendingServiceName { get; } = string.Empty;
         private JsonSerializerSettings JsonSerializerSettings { get; }
@@ -33,8 +36,9 @@ namespace Foundation.Sdk.Data
         /// <param name="clientFactory">The Http client factory to use for creating Http clients</param>
         /// <param name="logger">The logger to use</param>
         /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
-        /// <param name="routePrefix">Optional route parts to use after the hostname</param>
-        public HttpObjectRepository(IHttpClientFactory clientFactory, ILogger<HttpObjectRepository<T>> logger, string appName, string routePrefix = "")
+        /// <param name="databaseName">Name of the database</param>
+        /// <param name="collectionName">Name of the collection within the database</param>
+        public HttpObjectService(string appName, string databaseName, string collectionName, IHttpClientFactory clientFactory, ILogger<HttpObjectService<T>> logger)
         {
             #region Input Validation
             if (clientFactory == null)
@@ -49,19 +53,28 @@ namespace Foundation.Sdk.Data
             {
                 throw new ArgumentNullException(nameof(appName));
             }
-            if (routePrefix == null)
+            if (databaseName == null)
             {
-                throw new ArgumentNullException(nameof(routePrefix));
+                throw new ArgumentNullException(nameof(databaseName));
             }
-            if (!string.IsNullOrEmpty(routePrefix) && !_regexHostName.IsMatch(routePrefix))
+            if (collectionName == null)
             {
-                throw new ArgumentException(nameof(routePrefix));
+                throw new ArgumentNullException(nameof(collectionName));
+            }
+            if (!string.IsNullOrEmpty(databaseName) && !_regexCollectionName.IsMatch(databaseName))
+            {
+                throw new ArgumentException(nameof(databaseName));
+            }
+            if (!string.IsNullOrEmpty(collectionName) && !_regexCollectionName.IsMatch(collectionName))
+            {
+                throw new ArgumentException(nameof(collectionName));
             }
             #endregion // Input Validation
 
             _client = clientFactory.CreateClient($"{appName}-{Common.OBJECT_SERVICE_NAME}");
             _logger = logger;
-            _routePrefix = routePrefix;
+            _databaseName = databaseName;
+            _collectionName = collectionName;
             SendingServiceName = appName;
             JsonSerializerSettings = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore, ContractResolver = new CamelCasePropertyNamesContractResolver() };
         }
@@ -74,7 +87,8 @@ namespace Foundation.Sdk.Data
         /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
         /// <param name="routePrefix">Optional route parts to use</param>
         /// <param name="jsonSerializerSettings">Customer Json serializer</param>
-        public HttpObjectRepository(IHttpClientFactory clientFactory, ILogger<HttpObjectRepository<T>> logger, string appName, JsonSerializerSettings jsonSerializerSettings, string routePrefix = "") : this(clientFactory, logger, appName, routePrefix)
+        public HttpObjectService(string appName, string databaseName, string collectionName, IHttpClientFactory clientFactory, ILogger<HttpObjectService<T>> logger, JsonSerializerSettings jsonSerializerSettings) 
+            : this(appName, databaseName, collectionName, clientFactory, logger)
         {
             JsonSerializerSettings = jsonSerializerSettings;
         }
@@ -97,7 +111,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<T>(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -108,25 +122,25 @@ namespace Foundation.Sdk.Data
         }
 
         /// <summary>
-        /// Finds one or more objects based on the specified find criteria
+        /// Finds a set of objects that match the specified find criteria
         /// </summary>
-        /// <param name="from">The index on which to start retrieving objects</param>
-        /// <param name="size">The maximum size of the result set that should be returned</param>
-        /// <param name="sortFieldName">The field name on which to sort the result set</param>
-        /// <param name="payload">The search payload in MongoDB find syntax format; for more information see https://docs.mongodb.com/manual/reference/method/db.collection.find/</param>
-        /// <param name="sortDescending">Whether to sort in descending order or not</param>
+        /// <param name="findExpression">The MongoDB-style find syntax</param>
+        /// <param name="start">The index within the find results at which to start filtering</param>
+        /// <param name="size">The number of items within the find results to limit the result set to</param>
+        /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
+        /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
-        /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<SearchResults<T>>> FindAsync(int from, int size, string sortFieldName, string payload, bool sortDescending = true, Dictionary<string, string> headers = null)
+        /// <returns>A collection of objects that match the find criteria</returns>
+        public async Task<ServiceResult<SearchResults<T>>> FindAsync(string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             #region Input Validation
-            if (from < 0)
+            if (start < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(from));
+                throw new ArgumentOutOfRangeException(nameof(start));
             }
-            if (size < -1)
+            if (limit < -1)
             {
-                throw new ArgumentOutOfRangeException(nameof(size));
+                throw new ArgumentOutOfRangeException(nameof(limit));
             }
             if (!_regexCollectionName.IsMatch(sortFieldName))
             {
@@ -134,19 +148,19 @@ namespace Foundation.Sdk.Data
             }
             #endregion // Input Validation
 
-            int sort = sortDescending ? 1 : -1;
-            var url = $"{GetStandardCollectionUrl()}find?from={from}&size={size}&sort={sortFieldName}&order={sort}";
+            int sort = sortDirection == ListSortDirection.Descending ? 1 : -1;
+            var url = $"{GetStandardCollectionUrl()}/find?from={start}&size={limit}&sort={sortFieldName}&order={sort}";
 
             try
             {
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<SearchResults<T>> result = null;
-                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, payload);
+                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, findExpression);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<SearchResults<T>>(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Find completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Find completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -154,6 +168,22 @@ namespace Foundation.Sdk.Data
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Find failed on {_client.BaseAddress}{url}");
                 throw ex;
             }
+        }
+
+        /// <summary>
+        /// Searches for a set of objects that match the specified query syntax
+        /// </summary>
+        /// <param name="searchExpression">The Google-like query syntax</param>
+        /// <param name="start">The index within the find results at which to start filtering</param>
+        /// <param name="size">The number of items within the find results to limit the result set to</param>
+        /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
+        /// <param name="sortDirection">The sort direction</param>
+        /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
+        /// <returns>A collection of objects that match the search criteria</returns>
+        public async Task<ServiceResult<SearchResults<T>>> SearchAsync(string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        {
+            string convertedExpression = SearchStringConverter.BuildQuery(searchExpression);
+            return await FindAsync(findExpression: convertedExpression, start: start, limit: limit, sortFieldName: sortFieldName, sortDirection: sortDirection, headers: headers);
         }
 
         /// <summary>
@@ -176,7 +206,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<T>(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Update completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Update completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -192,11 +222,11 @@ namespace Foundation.Sdk.Data
         /// <param name="payload">The search payload in MongoDB find syntax format; for more information see https://docs.mongodb.com/manual/reference/method/db.collection.find/</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of integer</returns>
-        public async Task<ServiceResult<int>> GetCountAsync(string payload, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<long>> CountAsync(string payload, Dictionary<string, string> headers = null)
         {
             try
             {
-                var url = $"{GetStandardCollectionUrl()}count";
+                var url = $"{GetStandardCollectionUrl()}/count";
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<string> result = null;
 
@@ -208,9 +238,9 @@ namespace Foundation.Sdk.Data
 
                 var dictionary = JsonConvert.DeserializeObject<System.Collections.Generic.Dictionary<string, string>>(result.Value);
                 var kv = dictionary.FirstOrDefault(k => k.Key.Equals("count", StringComparison.OrdinalIgnoreCase));
-                int.TryParse(kv.Value, out int count);
-                var typedResult = new ServiceResult<int>(url, result.Elapsed, count, Common.OBJECT_SERVICE_NAME, result.Code, Common.GetCorrelationIdFromHeaders(headers));
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get count completed on {_client.BaseAddress} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                long.TryParse(kv.Value, out long count);
+                var typedResult = new ServiceResult<long>(value: count, status: (int)result.Status, correlationId: Common.GetCorrelationIdFromHeaders(headers)) { ServiceName = Common.OBJECT_SERVICE_NAME };
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get count completed on {_client.BaseAddress}");
                 return typedResult;
             }
             catch (Exception ex)
@@ -225,20 +255,21 @@ namespace Foundation.Sdk.Data
         /// </summary>
         /// <param name="id">The id of the object. This parameter must match a property on the object with a key of "id" (all lowercase).</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
-        /// <returns>ServiceResult of bool</returns>
-        public async Task<ServiceResult<DeleteResult>> DeleteAsync(object id, Dictionary<string, string> headers = null)
+        /// <returns>ServiceResult of int</returns>
+        public async Task<ServiceResult<int>> DeleteAsync(object id, Dictionary<string, string> headers = null)
         {
             var url = GetStandardItemUrl(id.ToString());
             try
             {
                 headers = Common.NormalizeHeaders(headers);
-                ServiceResult<DeleteResult> result = null;
+                ServiceResult<int> result = null;
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Delete, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
-                    result = await Common.GetHttpResultAsServiceResultAsync<DeleteResult>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    var deleteResult = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    result = ServiceResult<int>.CreateNewUsingDetailsFrom<string>(1, deleteResult);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -268,7 +299,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<T>(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Insert completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Insert completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -279,23 +310,82 @@ namespace Foundation.Sdk.Data
         }
 
         /// <summary>
+        /// Inserts many objects at once. IDs for the objects will be auto-generated.
+        /// </summary>
+        /// <param name="entities">The entities to insert</param>
+        /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
+        /// <returns>ServiceResult of the IDs of the objects that were inserted</returns>
+        public async Task<ServiceResult<IEnumerable<string>>> InsertManyAsync(IEnumerable<T> entities, Dictionary<string, string> headers = null)
+        {
+            var url = GetCollectionOperationUrl("multi");
+            try
+            {
+                var payload = SerializeEntities(entities);
+                headers = Common.NormalizeHeaders(headers);
+                ServiceResult<IEnumerable<string>> result = null;
+                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, payload);
+                using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
+                {
+                    var insertManyResult = await Common.GetHttpResultAsServiceResultAsync<InsertManyResult>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    result = ServiceResult<IEnumerable<string>>.CreateNewUsingDetailsFrom<InsertManyResult>(insertManyResult.Value.Ids, insertManyResult);
+                }
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Insert completed on {_client.BaseAddress}{url}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Insert failed on {_client.BaseAddress}{url}");
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// Aggregates data via an aggregation pipeline and returns an array of objects
+        /// </summary>
+        /// <param name="aggregationExpression">The MongoDB-style aggregation expression; see https://docs.mongodb.com/manual/aggregation/</param>
+        /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
+        /// <returns>List of matching and/or transformed objects</returns>
+        public async Task<ServiceResult<string>> AggregateAsync(string aggregationExpression, Dictionary<string, string> headers = null)
+        {
+            var url = $"{GetStandardCollectionUrl()}/aggregate";
+            try
+            {
+                headers = Common.NormalizeHeaders(headers);
+                ServiceResult<string> result = null;
+                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, aggregationExpression);
+                using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
+                {
+                    result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                }
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Aggregate completed on {_client.BaseAddress}{url}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Aggregate failed on {_client.BaseAddress}{url}");
+                throw ex;
+            }            
+        }
+
+        /// <summary>
         /// Deletes an entire collection
         /// </summary>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
-        /// <returns>ServiceResult of bool</returns>
-        public async Task<ServiceResult<bool>> DeleteCollectionAsync(Dictionary<string, string> headers = null)
+        /// <returns>ServiceResult of int</returns>
+        public async Task<ServiceResult<int>> DeleteCollectionAsync(Dictionary<string, string> headers = null)
         {
             var url = GetStandardCollectionUrl();
             try
             {
                 headers = Common.NormalizeHeaders(headers);
-                ServiceResult<bool> result = null;
+                ServiceResult<int> result = null;
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Delete, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
-                    result = await Common.GetHttpResultAsServiceResultAsync<bool>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    var deleteResult = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    result = ServiceResult<int>.CreateNewUsingDetailsFrom<string>(1, deleteResult);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete collection completed on {_client.BaseAddress} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete collection completed on {_client.BaseAddress}");
                 return result;
             }
             catch (Exception ex)
@@ -331,7 +421,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<List<string>>(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get distinct completed on {_client.BaseAddress} with field={fieldName} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get distinct completed on {_client.BaseAddress} with field={fieldName}");
                 return result;
             }
             catch (Exception ex)
@@ -352,34 +442,16 @@ namespace Foundation.Sdk.Data
             return requestMessage;
         }
 
-        private string SerializeEntity(T entity) 
-        {
-            if (typeof(T) == typeof(String))
-            {
-                return entity.ToString();
-            }  
-            else 
-            {
-                return JsonConvert.SerializeObject(entity, JsonSerializerSettings);
-            }
-        }
+        private string SerializeEntity(T entity) => _isStringType ? entity.ToString() : Newtonsoft.Json.JsonConvert.SerializeObject(entity, JsonSerializerSettings);
 
-        private string GetRoutePrefix()
-        {
-            if (string.IsNullOrEmpty(_routePrefix)) 
-            {
-                return string.Empty;
-            }
-            else 
-            {
-                return _routePrefix.EndsWith("/") ? _routePrefix : $"{_routePrefix}/";
-            }
-        }
+        private string SerializeEntities(IEnumerable<T> entity) => Newtonsoft.Json.JsonConvert.SerializeObject(entity, JsonSerializerSettings);
 
-        private string GetStandardItemUrl(string id) => $"{GetRoutePrefix()}{id}";
+        private string GetStandardItemUrl(string id) => $"{_databaseName}/{_collectionName}/{id}";
 
-        private string GetStandardCollectionUrl() => $"{GetRoutePrefix()}";
+        private string GetStandardCollectionUrl() => $"{_databaseName}/{_collectionName}";
 
-        private string GetStandardUrl(string routePart) => $"{GetRoutePrefix()}{routePart}";
+        private string GetStandardUrl(string routePart) => $"{_databaseName}/{_collectionName}/{routePart}";
+
+        private string GetCollectionOperationUrl(string operationName) => $"{operationName}/{_databaseName}/{_collectionName}";
     }
 }

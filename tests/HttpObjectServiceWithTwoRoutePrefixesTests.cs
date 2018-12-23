@@ -10,11 +10,11 @@ using RichardSzalay.MockHttp;
 
 namespace Foundation.Sdk.Tests
 {
-    public class HttpObjectRepositoryWithTwoRoutePrefixesTests : IClassFixture<ObjectServiceWithRoutePrefixesFixture>
+    public class HttpObjectServiceWithTwoRoutePrefixesTests : IClassFixture<ObjectServiceWithRoutePrefixesFixture>
     {
         ObjectServiceWithRoutePrefixesFixture _objectFixture;
 
-        public HttpObjectRepositoryWithTwoRoutePrefixesTests(ObjectServiceWithRoutePrefixesFixture fixture)
+        public HttpObjectServiceWithTwoRoutePrefixesTests(ObjectServiceWithRoutePrefixesFixture fixture)
         {
             this._objectFixture = fixture;
         }
@@ -22,15 +22,14 @@ namespace Foundation.Sdk.Tests
         [Fact]
         public void Get()
         {
-            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
+            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
             ServiceResult<Customer> result = repo.GetAsync("1").Result;
             Customer customerResult = result.Value;
-            Assert.Equal(HttpStatusCode.OK, result.Code);
+            Assert.Equal((int)HttpStatusCode.OK, result.Status);
             Assert.Equal("John", customerResult.FirstName);
             Assert.Equal("Smith", customerResult.LastName);
             Assert.Equal(32, customerResult.Age);
-            Assert.True(result.Elapsed.TotalMilliseconds > 0);
             Assert.Equal("Object", result.ServiceName);
         }
 
@@ -44,54 +43,51 @@ namespace Foundation.Sdk.Tests
                 Age = 39
             };
 
-            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
+            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
             ServiceResult<Customer> result = repo.ReplaceAsync("2", customer).Result;
             Customer customerResult = result.Value;
-            Assert.Equal(HttpStatusCode.OK, result.Code);
+            Assert.Equal((int)HttpStatusCode.OK, result.Status);
             Assert.Equal("Mary", customerResult.FirstName);
             Assert.Equal("Jane", customerResult.LastName);
             Assert.Equal(39, customerResult.Age);
-            Assert.True(result.Elapsed.TotalMilliseconds > 0);
             Assert.Equal("Object", result.ServiceName);
         }
 
         [Fact]
         public void Count()
         {
-            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
+            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
-            ServiceResult<int> result = repo.GetCountAsync(string.Empty).Result;
-            int count = result.Value;
-            Assert.Equal(HttpStatusCode.OK, result.Code);
+            ServiceResult<long> result = repo.CountAsync(string.Empty).Result;
+            long count = result.Value;
+            Assert.Equal((int)HttpStatusCode.OK, result.Status);
             Assert.Equal(2, count);
-            Assert.True(result.Elapsed.TotalMilliseconds > 0);
             Assert.Equal("Object", result.ServiceName);
         }
 
         [Fact]
         public void Find()
         {
-            var repo = new HttpObjectRepository<Customer>(_objectFixture.ClientFactory, _objectFixture.Logger, "unittests", "bookstore/customer");
+            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
-            ServiceResult<SearchResults<Customer>> result = repo.FindAsync(0, -1, string.Empty, string.Empty, true).Result;
+            ServiceResult<SearchResults<Customer>> result = repo.FindAsync(string.Empty, 0, -1, string.Empty, System.ComponentModel.ListSortDirection.Descending).Result;
             SearchResults<Customer> searchResults = result.Value;
-            Assert.Equal(HttpStatusCode.OK, result.Code);
+            Assert.Equal((int)HttpStatusCode.OK, result.Status);
             Assert.Equal(2, searchResults.Items.Count);
-            Assert.True(result.Elapsed.TotalMilliseconds > 0);
             Assert.Equal("Object", result.ServiceName);
         }
     }
 
     public class ObjectServiceWithRoutePrefixesFixture : IDisposable
     {
-        public ILogger<HttpObjectRepository<Customer>> Logger { get; private set; }
+        public ILogger<HttpObjectService<Customer>> Logger { get; private set; }
         public HttpClient Client { get; private set; }
         public IHttpClientFactory ClientFactory { get; private set; }
 
         public ObjectServiceWithRoutePrefixesFixture()
         {
-            Logger = new Mock<ILogger<HttpObjectRepository<Customer>>>().Object;
+            Logger = new Mock<ILogger<HttpObjectService<Customer>>>().Object;
 
             var mockHttp = new MockHttpMessageHandler();
 

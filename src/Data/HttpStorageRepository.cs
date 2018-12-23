@@ -62,7 +62,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<List<StorageMetadata>>(response, Common.STORAGE_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all drawers completed in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all drawers completed");
                 return result;
             }
             catch (Exception ex)
@@ -84,7 +84,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<DrawerResult>(response, Common.STORAGE_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Create drawer completed on {_client.BaseAddress}/{Drawer} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Create drawer completed on {_client.BaseAddress}/{Drawer}");
                 return result;
             }
             catch (Exception ex)
@@ -106,7 +106,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<DrawerResult>(response, Common.STORAGE_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete drawer completed on {_client.BaseAddress}/{Drawer} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete drawer completed on {_client.BaseAddress}/{Drawer}");
                 return result;
             }
             catch (Exception ex)
@@ -128,7 +128,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<DrawerResult>(response, Common.STORAGE_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get drawer completed on {_client.BaseAddress}/{Drawer} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get drawer completed on {_client.BaseAddress}/{Drawer}");
                 return result;
             }
             catch (Exception ex)
@@ -150,7 +150,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<List<StorageMetadata>>(response, Common.STORAGE_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all nodes on drawer completed on {_client.BaseAddress}/{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all nodes on drawer completed on {_client.BaseAddress}/{url}");
                 return result;
             }
             catch (Exception ex)
@@ -172,7 +172,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<StorageMetadata>(response, Common.STORAGE_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get node completed in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get node completed");
                 return result;
             }
             catch (Exception ex)

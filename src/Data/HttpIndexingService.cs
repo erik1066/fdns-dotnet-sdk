@@ -67,7 +67,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.INDEXING_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get config completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get config completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -96,7 +96,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.INDEXING_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Create config completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Create config completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -124,7 +124,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.INDEXING_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Register config completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Register config completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -152,7 +152,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.INDEXING_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete config completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete config completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -181,7 +181,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.INDEXING_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Index one object completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Index one object completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -209,7 +209,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.INDEXING_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Index all objects completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Index all objects completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -239,7 +239,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.INDEXING_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Index many objects completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Index many objects completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -268,7 +268,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.INDEXING_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get one object completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get one object completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -301,7 +301,7 @@ namespace Foundation.Sdk.Data
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.INDEXING_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get one object completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get one object completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)

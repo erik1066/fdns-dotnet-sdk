@@ -70,7 +70,7 @@ namespace Foundation.Sdk.Services
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.RULES_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get profile completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get profile completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -99,7 +99,7 @@ namespace Foundation.Sdk.Services
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.RULES_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Create profile completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Create profile completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -128,7 +128,7 @@ namespace Foundation.Sdk.Services
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.RULES_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Upsert profile completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Upsert profile completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)
@@ -158,7 +158,7 @@ namespace Foundation.Sdk.Services
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.RULES_SERVICE_NAME, url, headers);
                 }
-                _logger.LogInformation($"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Validate completed on {_client.BaseAddress}{url} in {result.Elapsed.TotalMilliseconds.ToString("N0")}");
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Validate completed on {_client.BaseAddress}{url}");
                 return result;
             }
             catch (Exception ex)

@@ -65,7 +65,7 @@ namespace Foundation.Sdk
             }
 
             string correlationId = GetCorrelationIdFromHeaders(headers);
-            var result = new ServiceResult<T>(uri, sw.Elapsed, objectValue, serviceName, response.StatusCode, correlationId, message);
+            var result = new ServiceResult<T>(value: objectValue, status: (int)response.StatusCode, correlationId: correlationId, message: message, servicename: serviceName);
             return result;
         }
 

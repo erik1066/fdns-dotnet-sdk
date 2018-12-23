@@ -15,7 +15,7 @@ namespace Foundation.Sdk
         /// <summary>
         /// Gets/sets the total number of objects returned in the result set
         /// </summary>
-        public int Size { get; set; }
+        public int Count => Items.Count;
 
         /// <summary>
         /// Gets/sets the starting value from which the result set was taken
