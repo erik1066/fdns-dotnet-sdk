@@ -22,6 +22,7 @@ namespace Foundation.Sdk.Data
         private readonly Regex _regexCollectionName = new Regex(@"^[a-zA-Z0-9\.]*$");
         private readonly HttpClient _client = null;
         private readonly ILogger<HttpObjectService<T>> _logger;
+        private const string ID_PROPERTY_NAME = "_id";
         private readonly string _databaseName = string.Empty;
         private readonly string _collectionName = string.Empty;
         private readonly bool _isStringType = typeof(T) == typeof(String);
@@ -315,6 +316,12 @@ namespace Foundation.Sdk.Data
             try
             {
                 var payload = SerializeEntity(entity);
+                
+                if (!_isStringType) 
+                {
+                    payload = ForceAddIdToJsonObject(id, payload);
+                }
+
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<T> result = null;
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, payload);
@@ -476,5 +483,26 @@ namespace Foundation.Sdk.Data
         private string GetStandardUrl(string routePart) => $"{_databaseName}/{_collectionName}/{routePart}";
 
         private string GetCollectionOperationUrl(string operationName) => $"{operationName}/{_databaseName}/{_collectionName}";
+
+        /// <summary>
+        /// Forces an ID property into a JSON object
+        /// </summary>
+        /// <param name="id">The ID value to force into the object's 'id' property</param>
+        /// <param name="json">The Json that should contain the ID key and value</param>
+        /// <returns>The Json object with an 'id' property and the specified id value</returns>
+        private string ForceAddIdToJsonObject(object id, string json)
+        {
+            var values = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+            if (values.ContainsKey(ID_PROPERTY_NAME))
+            {
+                values[ID_PROPERTY_NAME] = id;
+            }
+            else
+            {
+                values.Add(ID_PROPERTY_NAME, id);
+            }
+            string checkedJson = Newtonsoft.Json.JsonConvert.SerializeObject(values, Formatting.Indented);
+            return checkedJson;
+        }
     }
 }

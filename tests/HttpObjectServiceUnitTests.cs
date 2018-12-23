@@ -12,11 +12,11 @@ using Newtonsoft.Json.Linq;
 
 namespace Foundation.Sdk.Tests
 {
-    public class HttpObjectServiceTests : IClassFixture<ObjectFixture>
+    public class HttpObjectServiceUnitTests : IClassFixture<ObjectFixture>
     {
         ObjectFixture _objectFixture;
 
-        public HttpObjectServiceTests(ObjectFixture fixture)
+        public HttpObjectServiceUnitTests(ObjectFixture fixture)
         {
             this._objectFixture = fixture;
         }

@@ -621,8 +621,8 @@ namespace Foundation.Sdk.Tests
 
         public ILogger<MongoService<string>> Logger { get; private set; }
         public IMongoClient MongoClient { get; set; }
-        public MongoService<string> CustomersService { get; private set; }
-        public MongoService<string> BooksService { get; private set; }
+        public IObjectService<string> CustomersService { get; private set; }
+        public IObjectService<string> BooksService { get; private set; }
 
         public MongoServiceFixture()
         {
