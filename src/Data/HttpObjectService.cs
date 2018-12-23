@@ -102,6 +102,7 @@ namespace Foundation.Sdk.Data
         public async Task<ServiceResult<T>> GetAsync(object id, Dictionary<string, string> headers = null)
         {
             var url = GetStandardItemUrl(id.ToString());
+
             try
             {
                 headers = Common.NormalizeHeaders(headers);
@@ -117,6 +118,28 @@ namespace Foundation.Sdk.Data
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get failed on {_client.BaseAddress}{url}");
+                throw ex;
+            }
+        }
+
+        public async Task<ServiceResult<IEnumerable<T>>> GetAllAsync(Dictionary<string, string> headers = null)
+        {
+            var url = GetStandardCollectionUrl();
+            try
+            {
+                headers = Common.NormalizeHeaders(headers);
+                ServiceResult<IEnumerable<T>> result = null;
+                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Get, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers);
+                using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
+                {
+                    result = await Common.GetHttpResultAsServiceResultAsync<IEnumerable<T>>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                }
+                _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all completed on {_client.BaseAddress}{url}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all failed on {_client.BaseAddress}{url}");
                 throw ex;
             }
         }
