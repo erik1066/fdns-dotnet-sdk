@@ -551,8 +551,8 @@ namespace Foundation.Sdk.Tests
 
         [Theory]
         [InlineData("distinctBooks101", "author", "{}", 10)]
-        [InlineData("distinctBooks103", "title", "{}", 11)]
-        [InlineData("distinctBooks104", "title", "{ title: /^(the|a)/i }", 6)]
+        [InlineData("distinctBooks102", "title", "{}", 11)]
+        [InlineData("distinctBooks103", "title", "{ title: /^(the|a)/i }", 6)]
         public async Task Distinct(string collectionName, string fieldName, string findExpression, int expectedCount)
         {
             var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
@@ -579,6 +579,39 @@ namespace Foundation.Sdk.Tests
             var distinctResult = await repo.GetDistinctAsync(fieldName, findExpression);
             Assert.Equal(200, distinctResult.Status);            
             Assert.Equal(expectedCount, distinctResult.Value.Count);
+        }
+
+        [Theory]
+        [InlineData("countBooks101", "{}", 11)]
+        [InlineData("countBooks102", "{ title: /^(the|a)/i }", 6)]
+        [InlineData("countBooks103", "{ title: /^(the)/i }", 5)]
+        [InlineData("countBooks104", "{ title: /^(a)/i }", 1)]
+        public async Task Count(string collectionName, string findExpression, int expectedCount)
+        {
+            var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+
+            var items = new List<string>() 
+            {
+                "{ 'title': 'The Red Badge of Courage', 'author': 'Stephen Crane', 'pages': 112, 'isbn': { 'isbn-10' : '0486264653', 'isbn-13' : '978-0486264653' } }",
+                "{ 'title': 'Don Quixote', 'author': 'Miguel De Cervantes', 'pages': 992, 'isbn': { 'isbn-10' : '0060934344', 'isbn-13' : '978-0060934347' } }",
+                "{ 'title': 'The Grapes of Wrath', 'author': 'John Steinbeck', 'pages': 464, 'isbn': { 'isbn-10' : '0143039431', 'isbn-13' : '978-0143039433' } }",
+                "{ 'title': 'The Catcher in the Rye', 'author': 'J. D. Salinger', 'pages': 288, 'isbn': { 'isbn-10' : '9780316769174', 'isbn-13' : '978-0316769174' } }",
+                "{ 'title': 'Slaughterhouse-Five', 'author': 'Kurt Vonnegut', 'pages': 288, 'isbn': { 'isbn-10' : '0812988523', 'isbn-13' : '978-0812988529' } }",
+                "{ 'title': 'Of Mice and Men', 'author': 'John Steinbeck', 'pages': 112, 'isbn': { 'isbn-10' : '0140177396', 'isbn-13' : '978-0140177398' } }",
+                "{ 'title': 'A Connecticut Yankee in King Arthurs Court', 'author' : 'Mark Twain', 'pages': 116, 'isbn': { 'isbn-10' : '1517061385', 'isbn-13' : '978-1517061388' } }",
+                "{ 'title': 'Gone with the Wind', 'author': 'Margaret Mitchell', 'pages': 960, 'isbn': { 'isbn-10' : '1451635621', 'isbn-13' : '978-1451635621' } }",
+                "{ 'title': 'Fahrenheit 451', 'author': 'Ray Bradbury', 'pages': 249, 'isbn': { 'isbn-10' : '9781451673319', 'isbn-13' : '978-1451673319' } }",
+                "{ 'title': 'The Old Man and the Sea', 'author': 'Ernest Hemingway', 'pages': 128, 'isbn': { 'isbn-10' : '0684801221', 'isbn-13' : '978-0684801223' } }",
+                "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
+            };
+
+            var insertManyResult = await repo.InsertManyAsync(items);
+            Assert.Equal(201, insertManyResult.Status);
+            Assert.Equal(11, insertManyResult.Value.Count());
+
+            var distinctResult = await repo.CountAsync(findExpression);
+            Assert.Equal(200, distinctResult.Status);            
+            Assert.Equal(expectedCount, distinctResult.Value);
         }
     }
 
