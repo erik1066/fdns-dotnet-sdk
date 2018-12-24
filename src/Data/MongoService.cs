@@ -24,19 +24,18 @@ namespace Foundation.Sdk.Data
     /// <summary>
     /// Class representing a MongoDB service for arbitrary, untyped Json objects
     /// </summary>
-    public sealed class MongoService<T> : IObjectService<T>
+    public sealed class MongoService : IObjectService
     {
         private readonly IMongoClient _client = null;
         private static readonly JsonSerializerSettings _jsonSerializersettings = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore, ContractResolver = new CamelCasePropertyNamesContractResolver() };
         private static readonly JsonWriterSettings _jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict };
-        private readonly ILogger<MongoService<T>> _logger;
+        private readonly ILogger<MongoService> _logger;
         private const string ID_PROPERTY_NAME = "_id";
         private readonly IMongoDatabase _database;
         private readonly IMongoCollection<BsonDocument> _collection;
         private readonly string _databaseName = string.Empty;
         private readonly string _collectionName = string.Empty;
         private readonly string _serviceName = string.Empty;
-        private readonly bool _isStringType = typeof(T) == typeof(String);
 
         /// <summary>
         /// Constructor
@@ -45,7 +44,7 @@ namespace Foundation.Sdk.Data
         /// <param name="databaseName">Name of the database to use</param>
         /// <param name="collectionName">Name of the collection to use</param>
         /// <param name="logger">Logger</param>
-        public MongoService(IMongoClient client, string databaseName, string collectionName, ILogger<MongoService<T>> logger)
+        public MongoService(IMongoClient client, string databaseName, string collectionName, ILogger<MongoService> logger)
         {
             if (logger == null)
             {
@@ -71,16 +70,15 @@ namespace Foundation.Sdk.Data
         /// <param name="id">The id of the object to get</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>The object matching the specified id</returns>
-        public async Task<ServiceResult<T>> GetAsync(object id, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> GetAsync(object id, Dictionary<string, string> headers = null)
         {
             try
             {   
                 (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());
                 BsonDocument findDocument = isObjectId == true ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
                 var json = StringifyDocument(await _collection.Find(findDocument).FirstOrDefaultAsync());
-                T objectValue = GetObjectFromJson(json);
 
-                var result = new ServiceResult<T>(value: objectValue, status: json == null ? 404 : 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
+                var result = new ServiceResult<string>(value: json, status: json == null ? 404 : 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
                 return result;
             }
             catch (Exception ex)
@@ -95,7 +93,7 @@ namespace Foundation.Sdk.Data
         /// </summary>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>All objects in the collection</returns>
-        public async Task<ServiceResult<IEnumerable<T>>> GetAllAsync(Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<IEnumerable<string>>> GetAllAsync(Dictionary<string, string> headers = null)
         {
             try
             {
@@ -103,31 +101,18 @@ namespace Foundation.Sdk.Data
                 {
                     _logger.LogInformation($"{_serviceName}: Get all failed on {_database}/{_collection}: The collection does not exist");
                     var notFoundResult = GetNotFoundResult(correlationId: Common.GetCorrelationIdFromHeaders(headers), message: $"Collection '{_collectionName}' does not exist in database '{_databaseName}'");
-                    var copiedResult = ServiceResult<IEnumerable<T>>.CreateNewUsingDetailsFrom<T>(null, notFoundResult);
+                    var copiedResult = ServiceResult<IEnumerable<string>>.CreateNewUsingDetailsFrom<string>(null, notFoundResult);
                     return copiedResult;
                 }
 
                 var documents = await _collection.Find(_ => true).ToListAsync();
-                var json = StringifyDocuments(documents);
-
-                List<T> items = new List<T>();
-
-                if (_isStringType)
+                var items = new List<string>();
+                foreach (var document in documents)
                 {
-                    JArray array = JArray.Parse(json);
-                    foreach (var jObject in array)
-                    {
-                        var itemStr = jObject.ToString();
-                        var item = (T)(object)itemStr;
-                        items.Add(item);
-                    }
-                }
-                else
-                {
-                    items = Newtonsoft.Json.JsonConvert.DeserializeObject<List<T>>(json);
+                    items.Add(document.ToJson(_jsonWriterSettings));
                 }
 
-                var result = new ServiceResult<IEnumerable<T>>(value: items, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
+                var result = new ServiceResult<IEnumerable<string>>(value: items, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
                 return result;
             }
             catch (Exception ex)
@@ -138,18 +123,30 @@ namespace Foundation.Sdk.Data
         }
 
         /// <summary>
+        /// Inserts a single object into the given database and collection. An ID is auto-generated for the object.
+        /// </summary>
+        /// <param name="entity">The entity to insert</param>
+        /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
+        /// <returns>The object that was inserted</returns>
+        public async Task<ServiceResult<string>> InsertAsync(string entity, Dictionary<string, string> headers = null) => await InsertAsync(id: null, entity: entity, headers: headers);
+
+        /// <summary>
         /// Inserts a single object into the given database and collection
         /// </summary>
         /// <param name="id">The id of the object</param>
         /// <param name="entity">The entity to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>The object that was inserted</returns>
-        public async Task<ServiceResult<T>> InsertAsync(object id, T entity, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> InsertAsync(object id, string entity, Dictionary<string, string> headers = null)
         {
+            if (id is ObjectId && (ObjectId)id == ObjectId.Empty)
+            {
+                id = null;
+            }
+
             try
             {
-                var json = SerializeEntity(entity);
-                var document = BsonDocument.Parse(json);
+                var document = BsonDocument.Parse(entity);
 
                 if (id != null)
                 {
@@ -192,12 +189,11 @@ namespace Foundation.Sdk.Data
         /// <param name="entity">The entity</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>The object that was updated</returns>
-        public async Task<ServiceResult<T>> ReplaceAsync(object id, T entity, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> ReplaceAsync(object id, string entity, Dictionary<string, string> headers = null)
         {
             try
             {
-                var json = SerializeEntity(entity);
-                var document = BsonDocument.Parse(json);
+                var document = BsonDocument.Parse(entity);
                 (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());
                 BsonDocument findDocument = isObjectId == true ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
                 var replaceOneResult = await _collection.ReplaceOneAsync(findDocument, document);
@@ -270,7 +266,7 @@ namespace Foundation.Sdk.Data
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the find criteria</returns>
-        public async Task<ServiceResult<SearchResults<T>>> FindAsync(string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults<string>>> FindAsync(string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             try
             {
@@ -278,31 +274,23 @@ namespace Foundation.Sdk.Data
                 var document = await regexFind.ToListAsync();
                 var jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict, Indent = false, NewLineChars = string.Empty };
                 var json = document.ToJson(jsonWriterSettings);
-                var items = new List<T>();
+                var items = new List<string>();
 
-                if (_isStringType)
+                JArray array = JArray.Parse(json);
+                foreach (var jObject in array)
                 {
-                    JArray array = JArray.Parse(json);
-                    foreach (var jObject in array)
-                    {
-                        var itemStr = jObject.ToString();
-                        var item = (T)(object)itemStr;
-                        items.Add(item);
-                    }
-                }
-                else
-                {
-                    items = Newtonsoft.Json.JsonConvert.DeserializeObject<List<T>>(json);
+                    var item = jObject.ToString();
+                    items.Add(item);
                 }
 
-                SearchResults<T> searchResults = new SearchResults<T>()
+                SearchResults<string> searchResults = new SearchResults<string>()
                 {
                     Items = items,
                     From = start,
                     Total = items.Count
                 };
 
-                var result = new ServiceResult<SearchResults<T>>(value: searchResults, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
+                var result = new ServiceResult<SearchResults<string>>(value: searchResults, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
                 return result;
             }
             catch (Exception ex)
@@ -323,7 +311,7 @@ namespace Foundation.Sdk.Data
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the search criteria</returns>
-        public async Task<ServiceResult<SearchResults<T>>> SearchAsync(string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults<string>>> SearchAsync(string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             string convertedExpression = SearchStringConverter.BuildQuery(searchExpression);
             return await FindAsync(findExpression: convertedExpression, start: start, limit: limit, sortFieldName: sortFieldName, sortDirection: sortDirection, headers: headers);
@@ -354,7 +342,7 @@ namespace Foundation.Sdk.Data
         /// </summary>
         /// <param name="entities">The entities to be inserted</param>
         /// <returns>List of ids that were generated for the inserted objects</returns>
-        public async Task<ServiceResult<IEnumerable<string>>> InsertManyAsync(IEnumerable<T> entities, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<IEnumerable<string>>> InsertManyAsync(IEnumerable<string> entities, Dictionary<string, string> headers = null)
         {
             var jsonArray = SerializeEntities(entities);
             var documents = new List<BsonDocument>();
@@ -506,45 +494,20 @@ namespace Foundation.Sdk.Data
             return exists;
         }
 
-        private ServiceResult<T> GetNotFoundResult(string correlationId, string message = "") => new ServiceResult<T>(
-                value: default(T),
+        private ServiceResult<string> GetNotFoundResult(string correlationId, string message = "") => new ServiceResult<string>(
+                value: string.Empty,
                 status: (int)HttpStatusCode.NotFound,
                 correlationId: correlationId,
                 servicename: _serviceName,
                 message: !string.IsNullOrEmpty(message) ? message : "Object not found");
 
-        private ServiceResult<T> GetBadRequestResult(string correlationId, string message = "") => new ServiceResult<T>(
-                value: default(T),
+        private ServiceResult<string> GetBadRequestResult(string correlationId, string message = "") => new ServiceResult<string>(
+                value: string.Empty,
                 status: (int)HttpStatusCode.BadRequest,
                 correlationId: correlationId,
                 servicename: _serviceName,
                 message: !string.IsNullOrEmpty(message) ? message : "Invalid inputs");
 
-        private T GetObjectFromJson(string json)
-        {
-            T objectValue = default(T);
-
-            if (_isStringType)
-            {
-                if (!string.IsNullOrEmpty(json))
-                {
-                    objectValue = (T)(object)json;
-                }
-                else
-                {
-                    objectValue = (T)(object)string.Empty;
-                }
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(json))
-                {
-                    objectValue = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
-                }
-            }
-
-            return objectValue;
-        }
 
         private IMongoDatabase GetDatabase(string databaseName) => _client.GetDatabase(databaseName);
 
@@ -588,9 +551,9 @@ namespace Foundation.Sdk.Data
             return regexFind;
         }
 
-        private string SerializeEntity(T entity) => _isStringType ? entity.ToString() : Newtonsoft.Json.JsonConvert.SerializeObject(entity, _jsonSerializersettings);
+        private string SerializeEntity(string entity) => entity.ToString();
 
-        private string SerializeEntities(IEnumerable<T> entity) => Newtonsoft.Json.JsonConvert.SerializeObject(entity, _jsonSerializersettings);
+        private string SerializeEntities(IEnumerable<string> entity) => Newtonsoft.Json.JsonConvert.SerializeObject(entity, _jsonSerializersettings);
 
         #endregion // Private helper methods
     }

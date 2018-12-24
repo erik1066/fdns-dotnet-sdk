@@ -12,11 +12,11 @@ using Newtonsoft.Json.Linq;
 
 namespace Foundation.Sdk.Tests
 {
-    public class HttpObjectServiceUnitTests : IClassFixture<ObjectFixture>
+    public class HttpObjectServiceTests : IClassFixture<ObjectFixture>
     {
         ObjectFixture _objectFixture;
 
-        public HttpObjectServiceUnitTests(ObjectFixture fixture)
+        public HttpObjectServiceTests(ObjectFixture fixture)
         {
             this._objectFixture = fixture;
         }
@@ -24,42 +24,42 @@ namespace Foundation.Sdk.Tests
         [Fact]
         public void Get()
         {
-            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
+            var repo = new HttpObjectService("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
-            ServiceResult<Customer> result = repo.GetAsync("1").Result;
-            Customer customerResult = result.Value;
+            ServiceResult<string> result = repo.GetAsync("1").Result;
+            string customerResult = result.Value;
+            Customer customer = Newtonsoft.Json.JsonConvert.DeserializeObject<Customer>(customerResult);
+
             Assert.Equal((int)HttpStatusCode.OK, result.Status);
-            Assert.Equal("John", customerResult.FirstName);
-            Assert.Equal("Smith", customerResult.LastName);
-            Assert.Equal(32, customerResult.Age);
+            Assert.Equal("John", customer.FirstName);
+            Assert.Equal("Smith", customer.LastName);
+            Assert.Equal(32, customer.Age);
             Assert.Equal("Object", result.ServiceName);
         }
 
         [Fact]
         public void Replace()
         {
-            var customer = new Customer()
-            {
-                FirstName = "Mary",
-                LastName = "Jane",
-                Age = 39
-            };
+            var customer = "{ 'name': 'Mary', 'lastName': 'Jane', 'age': 39 }";
 
-            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
+            var repo = new HttpObjectService("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
-            ServiceResult<Customer> result = repo.ReplaceAsync("2", customer).Result;
-            Customer customerResult = result.Value;
+            ServiceResult<string> result = repo.ReplaceAsync("2", customer).Result;
+            
+            string newCustomerResult = result.Value;
+            Customer newCustomer = Newtonsoft.Json.JsonConvert.DeserializeObject<Customer>(newCustomerResult);
+
             Assert.Equal((int)HttpStatusCode.OK, result.Status);
-            Assert.Equal("Mary", customerResult.FirstName);
-            Assert.Equal("Jane", customerResult.LastName);
-            Assert.Equal(39, customerResult.Age);
+            Assert.Equal("Mary", newCustomer.FirstName);
+            Assert.Equal("Jane", newCustomer.LastName);
+            Assert.Equal(39, newCustomer.Age);
             Assert.Equal("Object", result.ServiceName);
         }
 
         [Fact]
         public void Count()
         {
-            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
+            var repo = new HttpObjectService("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
             ServiceResult<long> result = repo.CountAsync(string.Empty).Result;
             long count = result.Value;
@@ -71,11 +71,11 @@ namespace Foundation.Sdk.Tests
         [Fact]
         public void Find()
         {
-            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
+            var repo = new HttpObjectService("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
             var findTask = repo.FindAsync(findExpression: string.Empty, start: 0, limit: -1, sortFieldName: string.Empty, sortDirection: System.ComponentModel.ListSortDirection.Descending);
-            ServiceResult<SearchResults<Customer>> result = findTask.Result;
-            SearchResults<Customer> searchResults = result.Value;
+            ServiceResult<SearchResults<string>> result = findTask.Result;
+            SearchResults<string> searchResults = result.Value;
             Assert.Equal((int)HttpStatusCode.OK, result.Status);
             Assert.Equal(2, searchResults.Items.Count);
             Assert.Equal("Object", result.ServiceName);
@@ -84,7 +84,7 @@ namespace Foundation.Sdk.Tests
         [Fact]
         public void Delete()
         {
-            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
+            var repo = new HttpObjectService("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
             ServiceResult<int> result = repo.DeleteAsync("3").Result;
             int deleteResult = result.Value;
@@ -97,44 +97,32 @@ namespace Foundation.Sdk.Tests
         [Fact]
         public void Insert_with_Id()
         {
-            var customer = new Customer()
-            {
-                FirstName = "Mary",
-                LastName = "Jane",
-                Age = 39
-            };
+            var customer = "{ 'name': 'Mary', 'lastName': 'Jane', 'age': 39 }";
 
-            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
+            var repo = new HttpObjectService("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
-            ServiceResult<Customer> result = repo.InsertAsync("4", customer).Result;
-            Customer customerResult = result.Value;
+            ServiceResult<string> result = repo.InsertAsync("4", customer).Result;
+            
+            string newCustomerResult = result.Value;
+            Customer newCustomer = Newtonsoft.Json.JsonConvert.DeserializeObject<Customer>(newCustomerResult);
+
             Assert.Equal((int)HttpStatusCode.Created, result.Status);
-            Assert.Equal("Mary", customerResult.FirstName);
-            Assert.Equal("Jane", customerResult.LastName);
-            Assert.Equal(39, customerResult.Age);
+            Assert.Equal("Mary", newCustomer.FirstName);
+            Assert.Equal("Jane", newCustomer.LastName);
+            Assert.Equal(39, newCustomer.Age);
             Assert.Equal("Object", result.ServiceName);
         }
 
         [Fact]
         public void Multi_Insert()
         {
-            var customers = new List<Customer>(2)
+            var customers = new List<string>(2)
             {
-                new Customer() 
-                {
-                    FirstName = "Mary",
-                    LastName = "Jane",
-                    Age = 39
-                },
-                new Customer() 
-                {
-                    FirstName = "John",
-                    LastName = "Smith",
-                    Age = 48           
-                },
+                "{ 'name': 'Mary', 'lastName': 'Jane', 'age': 39 }",
+                "{ 'name': 'John', 'lastName': 'Smith', 'age': 48 }"
             };
 
-            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
+            var repo = new HttpObjectService("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
             ServiceResult<IEnumerable<string>> result = repo.InsertManyAsync(customers).Result;
             List<string> ids = (List<string>)result.Value;
@@ -146,7 +134,7 @@ namespace Foundation.Sdk.Tests
         [Fact]
         public void Aggregate()
         {
-            var repo = new HttpObjectService<Customer>("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
+            var repo = new HttpObjectService("unittests", "bookstore", "customer", _objectFixture.ClientFactory, _objectFixture.Logger);
 
             ServiceResult<string> result = repo.AggregateAsync("[{ $match: { title: /^(the|a)/i } }]").Result;
             var array = JArray.Parse(result.Value);
@@ -158,13 +146,13 @@ namespace Foundation.Sdk.Tests
 
     public class ObjectFixture : IDisposable
     {
-        public ILogger<HttpObjectService<Customer>> Logger { get; private set; }
+        public ILogger<HttpObjectService> Logger { get; private set; }
         public HttpClient Client { get; private set; }
         public IHttpClientFactory ClientFactory { get; private set; }
 
         public ObjectFixture()
         {
-            Logger = new Mock<ILogger<HttpObjectService<Customer>>>().Object;
+            Logger = new Mock<ILogger<HttpObjectService>>().Object;
 
             var mockHttp = new MockHttpMessageHandler();
 

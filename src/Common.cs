@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Foundation.Sdk
 {
@@ -27,18 +28,16 @@ namespace Foundation.Sdk
         {
             var sw = new Stopwatch();
             sw.Start();
-
-            var responseValue = await response.Content.ReadAsStringAsync();
-
+            var json = await response.Content.ReadAsStringAsync();
             sw.Stop();
 
             T objectValue = default(T);
 
             if (typeof(T) == typeof(String))
             {
-                if (responseValue != null)
+                if (json != null)
                 {
-                    objectValue = (T)(object)responseValue;
+                    objectValue = (T)(object)json;
                 }
                 else
                 {
@@ -47,26 +46,59 @@ namespace Foundation.Sdk
             }
             else
             {
-                if (!string.IsNullOrEmpty(responseValue))
+                if (!string.IsNullOrEmpty(json))
                 {
-                    objectValue = JsonConvert.DeserializeObject<T>(responseValue);
+                    objectValue = JsonConvert.DeserializeObject<T>(json);
                 }
             }
 
+            var result = new ServiceResult<T>(value: objectValue, status: (int)response.StatusCode, correlationId: GetCorrelationIdFromHeaders(headers), message: GetErrorMessage(response, json), servicename: serviceName);
+            return result;
+        }
+
+        public static async Task<ServiceResult<SearchResults<string>>> GetHttpResultAsServiceResultOfSearchResultsAsync(HttpResponseMessage response, string serviceName, string uri, Dictionary<string, string> headers, int start)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var json = await response.Content.ReadAsStringAsync();
+            sw.Stop();
+
+            var items = new List<string>();
+
+            JObject obj = JObject.Parse(json);
+
+            JArray array = JArray.Parse(obj["items"].ToString());
+            foreach (var jObject in array)
+            {
+                var item = jObject.ToString();
+                items.Add(item);
+            }
+
+            SearchResults<string> searchResults = new SearchResults<string>()
+            {
+                Items = items,
+                From = start,
+                Total = items.Count
+            };
+
+            var result = new ServiceResult<SearchResults<string>>(value: searchResults, status: (int)response.StatusCode, correlationId: GetCorrelationIdFromHeaders(headers), message: GetErrorMessage(response, json), servicename: serviceName);
+            return result;
+        }
+
+        private static string GetErrorMessage(HttpResponseMessage response, string json)
+        {
             string message = string.Empty;
 
-            if (response.IsSuccessStatusCode == false && !string.IsNullOrEmpty(responseValue))
+            if (response.IsSuccessStatusCode == false && !string.IsNullOrEmpty(json))
             {
-                var errorPayload = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseValue);
+                var errorPayload = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
                 if (errorPayload.ContainsKey("message"))
                 {
                     message = errorPayload["message"] != null ? errorPayload["message"].ToString() : string.Empty;
                 }
             }
 
-            string correlationId = GetCorrelationIdFromHeaders(headers);
-            var result = new ServiceResult<T>(value: objectValue, status: (int)response.StatusCode, correlationId: correlationId, message: message, servicename: serviceName);
-            return result;
+            return message;
         }
 
         public static string GetCorrelationIdFromHeaders(Dictionary<string, string> headers) => headers != null ? (headers.ContainsKey(CORRELATION_ID_HEADER) ? headers[CORRELATION_ID_HEADER] : string.Empty) : string.Empty;

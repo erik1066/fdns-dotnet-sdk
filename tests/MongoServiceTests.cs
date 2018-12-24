@@ -22,11 +22,11 @@ using Foundation.Sdk.Data;
 
 namespace Foundation.Sdk.Tests
 {
-    public partial class MongoServiceUntypedTests : IClassFixture<MongoServiceFixture>
+    public partial class MongoServiceTests : IClassFixture<MongoServiceFixture>
     {
         MongoServiceFixture _fixture;
 
-        public MongoServiceUntypedTests(MongoServiceFixture fixture)
+        public MongoServiceTests(MongoServiceFixture fixture)
         {
             this._fixture = fixture;
         }
@@ -38,11 +38,11 @@ namespace Foundation.Sdk.Tests
         public async Task Get_Object_by_Primitive_Id(string id, string insertedJson, string expectedJson)
         {
             // Arrange
-            var repo = _fixture.CustomersService;
+            IObjectService service = _fixture.CustomersService;
 
             // Act
-            var insertResult = await repo.InsertAsync(id, insertedJson);
-            var getResult = await repo.GetAsync(id);
+            var insertResult = await service.InsertAsync(id, insertedJson);
+            var getResult = await service.GetAsync(id);
             
             // Assert
             Assert.Equal(200, getResult.Status);
@@ -55,8 +55,8 @@ namespace Foundation.Sdk.Tests
         [InlineData("XABCD")]
         public async Task Get_Object_fail_Not_Found(string id)
         {
-            var repo = _fixture.CustomersService;
-            var getResult = await repo.GetAsync(id);
+            IObjectService service = _fixture.CustomersService;
+            var getResult = await service.GetAsync(id);
             Assert.Equal(404, getResult.Status);
         }
 
@@ -72,10 +72,10 @@ namespace Foundation.Sdk.Tests
         public async Task Insert_with_Primitive_Id(string id, string json, string expectedName)
         {
             // Arrange
-            var repo = _fixture.CustomersService;
+            IObjectService service = _fixture.CustomersService;
 
             // Act
-            var result = await repo.InsertAsync(id, json);
+            var result = await service.InsertAsync(id, json);
             
             JObject jsonObject = JObject.Parse(result.Value);
             
@@ -93,12 +93,12 @@ namespace Foundation.Sdk.Tests
         [InlineData("XQP2", "{ \"name\": \"A\" }")]
         public async Task Insert_fails_Duplicate_Ids(string id, string json)
         {
-            var repo = _fixture.CustomersService;
-            var result1 = await repo.InsertAsync(id, json);
+            IObjectService service = _fixture.CustomersService;
+            var result1 = await service.InsertAsync(id, json);
 
             Assert.Equal(201, result1.Status);
 
-            var result2 = await repo.InsertAsync(id, json);
+            var result2 = await service.InsertAsync(id, json);
             Assert.Equal(400, result2.Status);
         }
 
@@ -110,8 +110,8 @@ namespace Foundation.Sdk.Tests
         // Disallow inserting an object with malformed Json
         public async Task Insert_fails_Malformed_Json(string id, string json)
         {
-            var repo = _fixture.CustomersService;
-            var result = await repo.InsertAsync(id, json);
+            IObjectService service = _fixture.CustomersService;
+            var result = await service.InsertAsync(id, json);
             Assert.Equal(400, result.Status);
         }
 
@@ -123,12 +123,12 @@ namespace Foundation.Sdk.Tests
         public async Task Replace_with_Primitive_Id(string id, string json1, string json2, string expectedName)
         {
             // Arrange
-            var repo = _fixture.CustomersService;
+            IObjectService service = _fixture.CustomersService;
 
             // Act
-            var insertResult = await repo.InsertAsync(id, json1);
+            var insertResult = await service.InsertAsync(id, json1);
 
-            var replaceResult = await repo.ReplaceAsync(id, json2);
+            var replaceResult = await service.ReplaceAsync(id, json2);
 
             JObject jsonObject = JObject.Parse(replaceResult.Value);
             
@@ -148,8 +148,8 @@ namespace Foundation.Sdk.Tests
         // The service should reject inserting an object on a replace operation if the object doesn't already exist
         public async Task Upsert_fails_Not_Found(string id, string json)
         {
-            var repo = _fixture.CustomersService;
-            var result = await repo.ReplaceAsync(id, json);
+            IObjectService service = _fixture.CustomersService;
+            var result = await service.ReplaceAsync(id, json);
             Assert.Equal(404, result.Status);
         }
 
@@ -161,8 +161,8 @@ namespace Foundation.Sdk.Tests
         // Disallow updating an object with malformed Json
         public async Task Replace_fails_Malformed_Json(string id, string json)
         {
-            var repo = _fixture.CustomersService;
-            var result = await repo.ReplaceAsync(id, json);
+            IObjectService service = _fixture.CustomersService;
+            var result = await service.ReplaceAsync(id, json);
             Assert.Equal(400, result.Status);
         }
 
@@ -172,20 +172,20 @@ namespace Foundation.Sdk.Tests
         public async Task Delete_Object_by_Primitive_Id(string id, string json)
         {
             // Arrange
-            var repo = _fixture.CustomersService;
+            IObjectService service = _fixture.CustomersService;
 
             // Act
-            var insertResult = await repo.InsertAsync(id, json);
-            var firstGetResult = await repo.GetAsync(id);
+            var insertResult = await service.InsertAsync(id, json);
+            var firstGetResult = await service.GetAsync(id);
 
             Assert.Equal(200, firstGetResult.Status);
 
-            var deleteResult = await repo.DeleteAsync(id);
+            var deleteResult = await service.DeleteAsync(id);
 
             Assert.Equal(200, deleteResult.Status);
             Assert.Equal(1, deleteResult.Value);
 
-            var secondGetResult = await repo.GetAsync(id);
+            var secondGetResult = await service.GetAsync(id);
 
             Assert.True(string.IsNullOrEmpty(secondGetResult.Value));
         }
@@ -195,8 +195,8 @@ namespace Foundation.Sdk.Tests
         [InlineData("62")]
         public async Task Delete_Object_fails_Not_Found(string id)
         {
-            var repo = _fixture.CustomersService;
-            var deleteResult = await repo.DeleteAsync(id);
+            IObjectService service = _fixture.CustomersService;
+            var deleteResult = await service.DeleteAsync(id);
             Assert.Equal(404, deleteResult.Status);
             Assert.Equal(0, deleteResult.Value);
         }
@@ -222,7 +222,7 @@ namespace Foundation.Sdk.Tests
         [InlineData("{ title: /^(the|of)/i, pages: { $lt: 500 }, author: /^(john)/i }", 0, -1, 2)]
         public async Task Find_Objects_in_Collection(string findExpression, int start, int limit, int expectedCount)
         {
-            var repo = _fixture.CustomersService;
+            IObjectService service = _fixture.CustomersService;
 
             var items = new List<string>() 
             {
@@ -238,17 +238,17 @@ namespace Foundation.Sdk.Tests
                 "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
             };
 
-            var insertManyResult = await repo.InsertManyAsync(items);
+            var insertManyResult = await service.InsertManyAsync(items);
             Assert.Equal(201, insertManyResult.Status);
 
-            var findResult = await repo.FindAsync(findExpression, start, limit, "title", ListSortDirection.Ascending);
+            var findResult = await service.FindAsync(findExpression, start, limit, "title", ListSortDirection.Ascending);
             Assert.Equal(200, findResult.Status);
 
             SearchResults<string> results = findResult.Value;
             Assert.Equal(expectedCount, results.Count);
 
             // Delete the collection
-            var deleteCollectionResult = await repo.DeleteCollectionAsync();
+            var deleteCollectionResult = await service.DeleteCollectionAsync();
             Assert.Equal(200, deleteCollectionResult.Status);
         }
 
@@ -273,7 +273,7 @@ namespace Foundation.Sdk.Tests
         [InlineData("books115", "author!:\"John Steinbeck\"", 8)]
         public async Task Search_Collection(string collectionName, string qs, int expectedCount)
         {
-            var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -289,15 +289,15 @@ namespace Foundation.Sdk.Tests
                 "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
             };
 
-            var insertManyResult = await repo.InsertManyAsync(items);
+            var insertManyResult = await service.InsertManyAsync(items);
             Assert.Equal(201, insertManyResult.Status);
 
-            var searchResult = await repo.SearchAsync(qs, 0, -1, "title");
+            var searchResult = await service.SearchAsync(qs, 0, -1, "title");
             Assert.Equal(200, searchResult.Status);
             Assert.Equal(expectedCount, searchResult.Value.Items.Count);
 
             // Delete the collection
-            var deleteCollectionResult = await repo.DeleteCollectionAsync();
+            var deleteCollectionResult = await service.DeleteCollectionAsync();
             Assert.Equal(200, deleteCollectionResult.Status);
         }
 
@@ -306,25 +306,25 @@ namespace Foundation.Sdk.Tests
         [InlineData("qpdnv", "2", "{ \"title\": \"Don Quixote\" }")]
         public async Task Delete_Collection(string collectionName, string id, string json)
         {
-            var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
 
             // Try getting items in the collection. Collection doesn't exist yet, should get a 404
-            var getFirstCollectionResult = await repo.GetAllAsync();
+            var getFirstCollectionResult = await service.GetAllAsync();
             Assert.Equal(404, getFirstCollectionResult.Status);
 
             // Add an item to collection; Mongo auto-creates the collection            
-            var insertResult = await repo.InsertAsync(id, json);
+            var insertResult = await service.InsertAsync(id, json);
 
             // // Try getting items in collection a 2nd time. Now it should return a 200.
-            var getSecondCollectionResult = await repo.GetAllAsync();
+            var getSecondCollectionResult = await service.GetAllAsync();
             Assert.Equal(200, getSecondCollectionResult.Status);
 
             // Delete the collection
-            var deleteCollectionResult = await repo.DeleteCollectionAsync();
+            var deleteCollectionResult = await service.DeleteCollectionAsync();
             Assert.Equal(200, deleteCollectionResult.Status);
 
             // Try getting items in collection a 3rd time. It was just deleted so we should get a 404.
-            var getThirdCollectionResult = await repo.GetAllAsync();
+            var getThirdCollectionResult = await service.GetAllAsync();
             Assert.Equal(404, getThirdCollectionResult.Status);
         }
 
@@ -332,7 +332,7 @@ namespace Foundation.Sdk.Tests
         public async Task Get_Collection()
         {
             var collectionName = "orders2";
-            var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -352,7 +352,7 @@ namespace Foundation.Sdk.Tests
             int insertedItemsCount = 0;
             foreach (var item in items)
             {
-                var insertResult = await repo.InsertAsync(null, item);
+                var insertResult = await service.InsertAsync(item);
                 if (insertResult.Status == 201)
                 {
                     insertedItemsCount++;
@@ -370,7 +370,7 @@ namespace Foundation.Sdk.Tests
             Assert.Equal(items.Count, insertedItemsCount); // test that all inserts worked as expected
 
             // Try getting items in collection
-            var getCollectionResult = await repo.GetAllAsync();
+            var getCollectionResult = await service.GetAllAsync();
             Assert.Equal(200, getCollectionResult.Status);
 
             Assert.Equal(items.Count, getCollectionResult.Value.Count());
@@ -389,7 +389,7 @@ namespace Foundation.Sdk.Tests
         public async Task Insert_Multiple_Objects()
         {
             var collectionName = "orders3";
-            var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -405,7 +405,7 @@ namespace Foundation.Sdk.Tests
                 "{ \"title\": \"The Great Gatsby\" }"
             };
 
-            var insertManyResult = await repo.InsertManyAsync(items);
+            var insertManyResult = await service.InsertManyAsync(items);
             Assert.Equal(201, insertManyResult.Status);
             Assert.Equal(10, insertManyResult.Value.Count());
 
@@ -416,7 +416,7 @@ namespace Foundation.Sdk.Tests
             }
 
             // Try getting items in collection
-            var getCollectionResult = await repo.GetAllAsync();
+            var getCollectionResult = await service.GetAllAsync();
             Assert.Equal(200, getCollectionResult.Status);
             Assert.Equal(10, getCollectionResult.Value.Count());
 
@@ -449,7 +449,7 @@ namespace Foundation.Sdk.Tests
         public async Task Insert_Multiple_Objects_Fail_Malformed_Json()
         {
             var collectionName = "orders4";
-            var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            var repo = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -488,7 +488,7 @@ namespace Foundation.Sdk.Tests
         [InlineData("aggregatedBooksMatch105", "[{ $match: { title: /^(the|a)/i } }, { $limit: 200 }]", 6)]
         public async Task Aggregate_Match(string collectionName, string aggregateExpression, int expectedCount)
         {
-            var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            var repo = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -519,7 +519,7 @@ namespace Foundation.Sdk.Tests
         [InlineData("aggregatedBooksCount101", "[{ $match: { title: /^(the|a)/i } }, { $count: \"numberOfBooks\" }]", "numberOfBooks", 6)]
         public async Task Aggregate_Count(string collectionName, string aggregateExpression, string propertyName, int expectedCount)
         {
-            var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -536,11 +536,11 @@ namespace Foundation.Sdk.Tests
                 "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
             };
 
-            var insertManyResult = await repo.InsertManyAsync(items);
+            var insertManyResult = await service.InsertManyAsync(items);
             Assert.Equal(201, insertManyResult.Status);
             Assert.Equal(11, insertManyResult.Value.Count());
 
-            var aggregateResult = await repo.AggregateAsync(aggregateExpression);
+            var aggregateResult = await service.AggregateAsync(aggregateExpression);
             Assert.Equal(200, aggregateResult.Status);
 
             JToken token = JArray.Parse(aggregateResult.Value).FirstOrDefault();
@@ -555,7 +555,7 @@ namespace Foundation.Sdk.Tests
         [InlineData("distinctBooks103", "title", "{ title: /^(the|a)/i }", 6)]
         public async Task Distinct(string collectionName, string fieldName, string findExpression, int expectedCount)
         {
-            var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -572,11 +572,11 @@ namespace Foundation.Sdk.Tests
                 "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
             };
 
-            var insertManyResult = await repo.InsertManyAsync(items);
+            var insertManyResult = await service.InsertManyAsync(items);
             Assert.Equal(201, insertManyResult.Status);
             Assert.Equal(11, insertManyResult.Value.Count());
 
-            var distinctResult = await repo.GetDistinctAsync(fieldName, findExpression);
+            var distinctResult = await service.GetDistinctAsync(fieldName, findExpression);
             Assert.Equal(200, distinctResult.Status);            
             Assert.Equal(expectedCount, distinctResult.Value.Count);
         }
@@ -588,7 +588,7 @@ namespace Foundation.Sdk.Tests
         [InlineData("countBooks104", "{ title: /^(a)/i }", 1)]
         public async Task Count(string collectionName, string findExpression, int expectedCount)
         {
-            var repo = new MongoService<string>(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -605,11 +605,11 @@ namespace Foundation.Sdk.Tests
                 "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
             };
 
-            var insertManyResult = await repo.InsertManyAsync(items);
+            var insertManyResult = await service.InsertManyAsync(items);
             Assert.Equal(201, insertManyResult.Status);
             Assert.Equal(11, insertManyResult.Value.Count());
 
-            var distinctResult = await repo.CountAsync(findExpression);
+            var distinctResult = await service.CountAsync(findExpression);
             Assert.Equal(200, distinctResult.Status);            
             Assert.Equal(expectedCount, distinctResult.Value);
         }
@@ -619,19 +619,19 @@ namespace Foundation.Sdk.Tests
     {
         internal static MongoDbRunner _runner;
 
-        public ILogger<MongoService<string>> Logger { get; private set; }
+        public ILogger<MongoService> Logger { get; private set; }
         public IMongoClient MongoClient { get; set; }
-        public IObjectService<string> CustomersService { get; private set; }
-        public IObjectService<string> BooksService { get; private set; }
+        public IObjectService CustomersService { get; private set; }
+        public IObjectService BooksService { get; private set; }
 
         public MongoServiceFixture()
         {
-            Logger = new Mock<ILogger<MongoService<string>>>().Object;
+            Logger = new Mock<ILogger<MongoService>>().Object;
             _runner = MongoDbRunner.Start();
             MongoClient = new MongoClient(_runner.ConnectionString);
 
-            CustomersService = new MongoService<string>(MongoClient, "bookstore", "customer", Logger);
-            BooksService = new MongoService<string>(MongoClient, "bookstore", "books", Logger);
+            CustomersService = new MongoService(MongoClient, "bookstore", "customer", Logger);
+            BooksService = new MongoService(MongoClient, "bookstore", "books", Logger);
         }
 
         public void Dispose()

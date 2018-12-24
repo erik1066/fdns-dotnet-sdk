@@ -9,23 +9,23 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using MongoDB.Bson;
 
 namespace Foundation.Sdk.Data
 {
     /// <summary>
     /// Class for interacting with the FDNS Object microservice (see https://github.com/CDCgov/fdns-ms-object) over HTTP using strongly-typed objects
     /// </summary>
-    public sealed class HttpObjectService<T> : IObjectService<T>
+    public sealed class HttpObjectService : IObjectService
     {
         #region Members
         private readonly Regex _regexHostName = new Regex(@"^[a-zA-Z0-9:\.\-/]*$");
         private readonly Regex _regexCollectionName = new Regex(@"^[a-zA-Z0-9\.]*$");
         private readonly HttpClient _client = null;
-        private readonly ILogger<HttpObjectService<T>> _logger;
+        private readonly ILogger<HttpObjectService> _logger;
         private const string ID_PROPERTY_NAME = "_id";
         private readonly string _databaseName = string.Empty;
         private readonly string _collectionName = string.Empty;
-        private readonly bool _isStringType = typeof(T) == typeof(String);
 
         private string SendingServiceName { get; } = string.Empty;
         private JsonSerializerSettings JsonSerializerSettings { get; }
@@ -39,7 +39,7 @@ namespace Foundation.Sdk.Data
         /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
         /// <param name="databaseName">Name of the database</param>
         /// <param name="collectionName">Name of the collection within the database</param>
-        public HttpObjectService(string appName, string databaseName, string collectionName, IHttpClientFactory clientFactory, ILogger<HttpObjectService<T>> logger)
+        public HttpObjectService(string appName, string databaseName, string collectionName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger)
         {
             #region Input Validation
             if (clientFactory == null)
@@ -88,7 +88,7 @@ namespace Foundation.Sdk.Data
         /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
         /// <param name="routePrefix">Optional route parts to use</param>
         /// <param name="jsonSerializerSettings">Customer Json serializer</param>
-        public HttpObjectService(string appName, string databaseName, string collectionName, IHttpClientFactory clientFactory, ILogger<HttpObjectService<T>> logger, JsonSerializerSettings jsonSerializerSettings) 
+        public HttpObjectService(string appName, string databaseName, string collectionName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger, JsonSerializerSettings jsonSerializerSettings) 
             : this(appName, databaseName, collectionName, clientFactory, logger)
         {
             JsonSerializerSettings = jsonSerializerSettings;
@@ -100,18 +100,18 @@ namespace Foundation.Sdk.Data
         /// <param name="id">The id of the object to retrieve. This parameter must match a property on the object with a key of "id" (all lowercase).</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<T>> GetAsync(object id, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> GetAsync(object id, Dictionary<string, string> headers = null)
         {
             var url = GetStandardItemUrl(id.ToString());
 
             try
             {
                 headers = Common.NormalizeHeaders(headers);
-                ServiceResult<T> result = null;
+                ServiceResult<string> result = null;
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Get, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
-                    result = await Common.GetHttpResultAsServiceResultAsync<T>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get completed on {_client.BaseAddress}{url}");
                 return result;
@@ -123,17 +123,17 @@ namespace Foundation.Sdk.Data
             }
         }
 
-        public async Task<ServiceResult<IEnumerable<T>>> GetAllAsync(Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<IEnumerable<string>>> GetAllAsync(Dictionary<string, string> headers = null)
         {
             var url = GetStandardCollectionUrl();
             try
             {
                 headers = Common.NormalizeHeaders(headers);
-                ServiceResult<IEnumerable<T>> result = null;
+                ServiceResult<IEnumerable<string>> result = null;
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Get, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
-                    result = await Common.GetHttpResultAsServiceResultAsync<IEnumerable<T>>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    result = await Common.GetHttpResultAsServiceResultAsync<IEnumerable<string>>(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all completed on {_client.BaseAddress}{url}");
                 return result;
@@ -155,7 +155,7 @@ namespace Foundation.Sdk.Data
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the find criteria</returns>
-        public async Task<ServiceResult<SearchResults<T>>> FindAsync(string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults<string>>> FindAsync(string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             #region Input Validation
             if (start < 0)
@@ -178,11 +178,11 @@ namespace Foundation.Sdk.Data
             try
             {
                 headers = Common.NormalizeHeaders(headers);
-                ServiceResult<SearchResults<T>> result = null;
+                ServiceResult<SearchResults<string>> result = null;
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, findExpression);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
-                    result = await Common.GetHttpResultAsServiceResultAsync<SearchResults<T>>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    result = await Common.GetHttpResultAsServiceResultOfSearchResultsAsync(response, Common.OBJECT_SERVICE_NAME, url, headers, start);
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Find completed on {_client.BaseAddress}{url}");
                 return result;
@@ -204,7 +204,7 @@ namespace Foundation.Sdk.Data
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the search criteria</returns>
-        public async Task<ServiceResult<SearchResults<T>>> SearchAsync(string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults<string>>> SearchAsync(string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             string convertedExpression = SearchStringConverter.BuildQuery(searchExpression);
             return await FindAsync(findExpression: convertedExpression, start: start, limit: limit, sortFieldName: sortFieldName, sortDirection: sortDirection, headers: headers);
@@ -217,18 +217,18 @@ namespace Foundation.Sdk.Data
         /// <param name="entity">The entity that will replace the object with the specified id</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<T>> ReplaceAsync(object id, T entity, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> ReplaceAsync(object id, string entity, Dictionary<string, string> headers = null)
         {
             var url = GetStandardItemUrl(id.ToString());
             try
             {
                 var payload = SerializeEntity(entity);
                 headers = Common.NormalizeHeaders(headers);
-                ServiceResult<T> result = null;
+                ServiceResult<string> result = null;
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Put, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, payload);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
-                    result = await Common.GetHttpResultAsServiceResultAsync<T>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Update completed on {_client.BaseAddress}{url}");
                 return result;
@@ -304,30 +304,34 @@ namespace Foundation.Sdk.Data
         }
 
         /// <summary>
-        /// Inserts an object by id
+        /// Inserts an object with no specified Id. An ID is assigned by the database.
         /// </summary>
-        /// <param name="id">The id of the object. This parameter must match a property on the object with a key of "id" (all lowercase).</param>
         /// <param name="entity">The entity to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<T>> InsertAsync(object id, T entity, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> InsertAsync(string entity, Dictionary<string, string> headers = null) => await InsertAsync(id: null, entity: entity, headers: headers);
+
+        /// <summary>
+        /// Inserts an object by id
+        /// </summary>
+        /// <param name="id">The id of the object. This parameter must match a property on the object with a key of "_id" (all lowercase).</param>
+        /// <param name="entity">The entity to insert</param>
+        /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
+        /// <returns>ServiceResult of T</returns>
+        public async Task<ServiceResult<string>> InsertAsync(object id, string entity, Dictionary<string, string> headers = null)
         {
-            var url = GetStandardItemUrl(id.ToString());
+            string url = (id != null) ? GetStandardItemUrl(id.ToString()) : GetStandardCollectionUrl();
+            
             try
             {
-                var payload = SerializeEntity(entity);
-                
-                if (!_isStringType) 
-                {
-                    payload = ForceAddIdToJsonObject(id, payload);
-                }
+                entity = ForceAddIdToJsonObject(id, entity);
 
                 headers = Common.NormalizeHeaders(headers);
-                ServiceResult<T> result = null;
-                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, payload);
+                ServiceResult<string> result = null;
+                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, entity);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
-                    result = await Common.GetHttpResultAsServiceResultAsync<T>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Insert completed on {_client.BaseAddress}{url}");
                 return result;
@@ -345,7 +349,7 @@ namespace Foundation.Sdk.Data
         /// <param name="entities">The entities to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of the IDs of the objects that were inserted</returns>
-        public async Task<ServiceResult<IEnumerable<string>>> InsertManyAsync(IEnumerable<T> entities, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<IEnumerable<string>>> InsertManyAsync(IEnumerable<string> entities, Dictionary<string, string> headers = null)
         {
             var url = GetCollectionOperationUrl("multi");
             try
@@ -472,9 +476,9 @@ namespace Foundation.Sdk.Data
             return requestMessage;
         }
 
-        private string SerializeEntity(T entity) => _isStringType ? entity.ToString() : Newtonsoft.Json.JsonConvert.SerializeObject(entity, JsonSerializerSettings);
+        private string SerializeEntity(string entity) => entity.ToString();
 
-        private string SerializeEntities(IEnumerable<T> entity) => Newtonsoft.Json.JsonConvert.SerializeObject(entity, JsonSerializerSettings);
+        private string SerializeEntities(IEnumerable<string> entity) => Newtonsoft.Json.JsonConvert.SerializeObject(entity, JsonSerializerSettings);
 
         private string GetStandardItemUrl(string id) => $"{_databaseName}/{_collectionName}/{id}";
 
@@ -492,17 +496,33 @@ namespace Foundation.Sdk.Data
         /// <returns>The Json object with an 'id' property and the specified id value</returns>
         private string ForceAddIdToJsonObject(object id, string json)
         {
+            // (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());
+
             var values = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
             if (values.ContainsKey(ID_PROPERTY_NAME))
             {
-                values[ID_PROPERTY_NAME] = id;
+                if (id != null)
+                {
+                    values[ID_PROPERTY_NAME] = id;
+                }
+                else
+                {
+                    values.Remove(ID_PROPERTY_NAME);
+                }
             }
-            else
+            else if (id != null)
             {
                 values.Add(ID_PROPERTY_NAME, id);
             }
+
             string checkedJson = Newtonsoft.Json.JsonConvert.SerializeObject(values, Formatting.Indented);
             return checkedJson;
+        }
+
+        private (bool, ObjectId) IsObjectId(string id)
+        {
+            bool isObjectId = ObjectId.TryParse(id.ToString(), out ObjectId objectId);
+            return (isObjectId, objectId);
         }
     }
 }
