@@ -148,18 +148,29 @@
 //             {
 //                 try 
 //                 {
-//                     var result = checkerClient.GetAsync("http://localhost:9090/health/live");
+//                     var result = checkerClient.GetAsync("http://localhost:9090/health/ready");
 //                     if (result.Result.IsSuccessStatusCode)
 //                     {
-//                         started = true;
+//                         var json = result.Result.Content.ReadAsStringAsync().Result;
+//                         var obj = JObject.Parse(json);
+//                         var status = obj["status"].ToString();
+
+//                         if (status.Equals("Healthy", StringComparison.OrdinalIgnoreCase))
+//                         {
+//                             started = true;                            
+//                         }
+//                         else
+//                         {
+//                             started = false;
+//                         }
 //                     }
 //                     else
 //                     {
 //                         started = false;
 //                     }
-//                     System.Threading.Thread.Sleep(1_000);
+//                     System.Threading.Thread.Sleep(500);
 //                 }
-//                 catch { }
+//                 catch { started = false; }
 
 //                 TimeSpan ts = DateTime.Now - startTime;
 //                 if (ts.TotalSeconds > 30)
@@ -183,17 +194,28 @@
 //             };
 //             process.Start();
             
-//             bool started = false;
+//             bool started = true;
 //             var startTime = DateTime.Now;
 
 //             while (started)
 //             {
 //                 try 
 //                 {
-//                     var result = checkerClient.GetAsync("http://localhost:9090/health/live");
+//                     var result = checkerClient.GetAsync("http://localhost:9090/health/ready");
 //                     if (result.Result.IsSuccessStatusCode)
 //                     {
-//                         started = true;
+//                         var json = result.Result.Content.ReadAsStringAsync().Result;
+//                         var obj = JObject.Parse(json);
+//                         var status = obj["status"].ToString();
+
+//                         if (status.Equals("Healthy", StringComparison.OrdinalIgnoreCase))
+//                         {
+//                             started = true;                            
+//                         }
+//                         else
+//                         {
+//                             started = false;
+//                         }
 //                     }
 //                     else
 //                     {
@@ -201,7 +223,7 @@
 //                     }
 //                     System.Threading.Thread.Sleep(500);
 //                 }
-//                 catch { }
+//                 catch { started = false; }
 
 //                 TimeSpan ts = DateTime.Now - startTime;
 //                 if (ts.TotalSeconds > 20)

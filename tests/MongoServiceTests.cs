@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -207,13 +208,13 @@ namespace Foundation.Sdk.Tests
         [InlineData("{ pages: 288 }", 0, 1, 1)]
         [InlineData("{ pages: 288 }", 1, 1, 1)]
         [InlineData("{ pages: 289 }", 0, -1, 0)]
-        [InlineData("{ pages: { $lt: 150 } }", 0, -1, 3)]
+        [InlineData("{ pages: { $lt: 150 } }", 0, -1, 4)]
         [InlineData("{ pages: { $lt: 112 } }", 0, -1, 0)]
         [InlineData("{ pages: { $lte: 112 } }", 0, -1, 2)]
         [InlineData("{ pages: { $gt: 150 } }", 0, -1, 7)]
         [InlineData("{ pages: { $gt: 464 } }", 0, -1, 2)]
         [InlineData("{ pages: { $gte: 464 } }", 0, -1, 3)]
-        [InlineData("{ title: /^(the|a)/i }", 0, -1, 5)]
+        [InlineData("{ title: /^(the|a)/i }", 0, -1, 6)]
         [InlineData("{ title: /^(the|of)/i }", 0, -1, 6)]
         [InlineData("{ title: /^(g)/i }", 0, -1, 1)]
         [InlineData("{ title: /^(the|of)/i, pages: { $gt: 300 } }", 0, -1, 1)]
@@ -222,83 +223,41 @@ namespace Foundation.Sdk.Tests
         [InlineData("{ title: /^(the|of)/i, pages: { $lt: 500 }, author: /^(john)/i }", 0, -1, 2)]
         public async Task Find_Objects_in_Collection(string findExpression, int start, int limit, int expectedCount)
         {
-            IObjectService service = _fixture.CustomersService;
-
-            var items = new List<string>() 
-            {
-                "{ 'title': 'The Red Badge of Courage', 'author': 'Stephen Crane', 'pages': 112, 'isbn': { 'isbn-10' : '0486264653', 'isbn-13' : '978-0486264653' } }",
-                "{ 'title': 'Don Quixote', 'author': 'Miguel De Cervantes', 'pages': 992, 'isbn': { 'isbn-10' : '0060934344', 'isbn-13' : '978-0060934347' } }",
-                "{ 'title': 'The Grapes of Wrath', 'author': 'John Steinbeck', 'pages': 464, 'isbn': { 'isbn-10' : '0143039431', 'isbn-13' : '978-0143039433' } }",
-                "{ 'title': 'The Catcher in the Rye', 'author': 'J. D. Salinger', 'pages': 288, 'isbn': { 'isbn-10' : '9780316769174', 'isbn-13' : '978-0316769174' } }",
-                "{ 'title': 'Slaughterhouse-Five', 'author': 'Kurt Vonnegut', 'pages': 288, 'isbn': { 'isbn-10' : '0812988523', 'isbn-13' : '978-0812988529' } }",
-                "{ 'title': 'Of Mice and Men', 'author': 'John Steinbeck', 'pages': 112, 'isbn': { 'isbn-10' : '0140177396', 'isbn-13' : '978-0140177398' } }",
-                "{ 'title': 'Gone with the Wind', 'author': 'Margaret Mitchell', 'pages': 960, 'isbn': { 'isbn-10' : '1451635621', 'isbn-13' : '978-1451635621' } }",
-                "{ 'title': 'Fahrenheit 451', 'author': 'Ray Bradbury', 'pages': 249, 'isbn': { 'isbn-10' : '9781451673319', 'isbn-13' : '978-1451673319' } }",
-                "{ 'title': 'The Old Man and the Sea', 'author': 'Ernest Hemingway', 'pages': 128, 'isbn': { 'isbn-10' : '0684801221', 'isbn-13' : '978-0684801223' } }",
-                "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
-            };
-
-            var insertManyResult = await service.InsertManyAsync(items);
-            Assert.Equal(201, insertManyResult.Status);
+            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", "historicalbooks", _fixture.Logger);
 
             var findResult = await service.FindAsync(findExpression, start, limit, "title", ListSortDirection.Ascending);
             Assert.Equal(200, findResult.Status);
 
             SearchResults<string> results = findResult.Value;
             Assert.Equal(expectedCount, results.Count);
-
-            // Delete the collection
-            var deleteCollectionResult = await service.DeleteCollectionAsync();
-            Assert.Equal(200, deleteCollectionResult.Status);
         }
 
         [Theory]
-        [InlineData("books101", "pages>464", 2)]
-        [InlineData("books101", "pages>=464", 3)]
-        [InlineData("books102", "pages<464", 7)]
-        [InlineData("books103", "pages>=288", 5)]
-        [InlineData("books103", "pages:288", 2)]
-        [InlineData("books104", "pages!:288", 8)]
-        [InlineData("books105", "title:Slaughterhouse-Five", 1)]
-        [InlineData("books105", "title:\"Slaughterhouse-Five\"", 1)]
-        [InlineData("books106", "title:\"The Red Badge of Courage\" pages>50", 1)]
-        [InlineData("books107", "title:\"The Great Gatsby\" pages>250", 0)]
-        [InlineData("books108", "title:\"The Great Gatsby\" pages<250", 1)]
-        [InlineData("books109", "title:\"The Great Gatsby\" pages<250 author:\"F. Scott Fitzgerald\"", 1)]
-        [InlineData("books110", "author:\"John Steinbeck\"", 2)]
-        [InlineData("books111", "author:\"John Steinbeck\" pages<=464", 2)]
-        [InlineData("books112", "author:\"John Steinbeck\" pages<464", 1)]
-        [InlineData("books113", "pages<464 author:\"John Steinbeck\"", 1)]
-        [InlineData("books114", "author:\"Cervantes\"", 0)]
-        [InlineData("books115", "author!:\"John Steinbeck\"", 8)]
+        [InlineData("historicalbooks", "pages>464", 2)]
+        [InlineData("historicalbooks", "pages>=464", 3)]
+        [InlineData("historicalbooks", "pages<464", 8)]
+        [InlineData("historicalbooks", "pages>=288", 5)]
+        [InlineData("historicalbooks", "pages:288", 2)]
+        [InlineData("historicalbooks", "pages!:288", 9)]
+        [InlineData("historicalbooks", "title:Slaughterhouse-Five", 1)]
+        [InlineData("historicalbooks", "title:\"Slaughterhouse-Five\"", 1)]
+        [InlineData("historicalbooks", "title:\"The Red Badge of Courage\" pages>50", 1)]
+        [InlineData("historicalbooks", "title:\"The Great Gatsby\" pages>250", 0)]
+        [InlineData("historicalbooks", "title:\"The Great Gatsby\" pages<250", 1)]
+        [InlineData("historicalbooks", "title:\"The Great Gatsby\" pages<250 author:\"F. Scott Fitzgerald\"", 1)]
+        [InlineData("historicalbooks", "author:\"John Steinbeck\"", 2)]
+        [InlineData("historicalbooks", "author:\"John Steinbeck\" pages<=464", 2)]
+        [InlineData("historicalbooks", "author:\"John Steinbeck\" pages<464", 1)]
+        [InlineData("historicalbooks", "pages<464 author:\"John Steinbeck\"", 1)]
+        [InlineData("historicalbooks", "author:\"Cervantes\"", 0)]
+        [InlineData("historicalbooks", "author!:\"John Steinbeck\"", 9)]
         public async Task Search_Collection(string collectionName, string qs, int expectedCount)
         {
             IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
 
-            var items = new List<string>() 
-            {
-                "{ 'title': 'The Red Badge of Courage', 'author': 'Stephen Crane', 'pages': 112, 'isbn': { 'isbn-10' : '0486264653', 'isbn-13' : '978-0486264653' } }",
-                "{ 'title': 'Don Quixote', 'author': 'Miguel De Cervantes', 'pages': 992, 'isbn': { 'isbn-10' : '0060934344', 'isbn-13' : '978-0060934347' } }",
-                "{ 'title': 'The Grapes of Wrath', 'author': 'John Steinbeck', 'pages': 464, 'isbn': { 'isbn-10' : '0143039431', 'isbn-13' : '978-0143039433' } }",
-                "{ 'title': 'The Catcher in the Rye', 'author': 'J. D. Salinger', 'pages': 288, 'isbn': { 'isbn-10' : '9780316769174', 'isbn-13' : '978-0316769174' } }",
-                "{ 'title': 'Slaughterhouse-Five', 'author': 'Kurt Vonnegut', 'pages': 288, 'isbn': { 'isbn-10' : '0812988523', 'isbn-13' : '978-0812988529' } }",
-                "{ 'title': 'Of Mice and Men', 'author': 'John Steinbeck', 'pages': 112, 'isbn': { 'isbn-10' : '0140177396', 'isbn-13' : '978-0140177398' } }",
-                "{ 'title': 'Gone with the Wind', 'author': 'Margaret Mitchell', 'pages': 960, 'isbn': { 'isbn-10' : '1451635621', 'isbn-13' : '978-1451635621' } }",
-                "{ 'title': 'Fahrenheit 451', 'author': 'Ray Bradbury', 'pages': 249, 'isbn': { 'isbn-10' : '9781451673319', 'isbn-13' : '978-1451673319' } }",
-                "{ 'title': 'The Old Man and the Sea', 'author': 'Ernest Hemingway', 'pages': 128, 'isbn': { 'isbn-10' : '0684801221', 'isbn-13' : '978-0684801223' } }",
-                "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
-            };
-
-            var insertManyResult = await service.InsertManyAsync(items);
-            Assert.Equal(201, insertManyResult.Status);
-
             var searchResult = await service.SearchAsync(qs, 0, -1, "title");
             Assert.Equal(200, searchResult.Status);
             Assert.Equal(expectedCount, searchResult.Value.Items.Count);
-
-            // Delete the collection
-            var deleteCollectionResult = await service.DeleteCollectionAsync();
-            Assert.Equal(200, deleteCollectionResult.Status);
         }
 
         [Theory]
@@ -481,33 +440,14 @@ namespace Foundation.Sdk.Tests
         }
 
         [Theory]
-        [InlineData("aggregatedBooksMatch101", "[{ $match: { title: /^(the|a)/i } }]", 6)]
-        [InlineData("aggregatedBooksMatch102", "[{ $match: { title: /^(the|a)/i, pages: { $gt: 120 } } }]", 4)]
-        [InlineData("aggregatedBooksMatch103", "[{ $match: { title: /^(the|a)/i, pages: { $gt: 120 } } }, { $sort: { pages : -1 } }]", 4)]
-        [InlineData("aggregatedBooksMatch104", "[{ $match: { title: /^(the|a)/i, pages: { $gt: 120 } } }, { $sort: { pages : -1 } }, { $limit: 2 }]", 2)]
-        [InlineData("aggregatedBooksMatch105", "[{ $match: { title: /^(the|a)/i } }, { $limit: 200 }]", 6)]
+        [InlineData("historicalbooks", "[{ $match: { title: /^(the|a)/i } }]", 6)]
+        [InlineData("historicalbooks", "[{ $match: { title: /^(the|a)/i, pages: { $gt: 120 } } }]", 4)]
+        [InlineData("historicalbooks", "[{ $match: { title: /^(the|a)/i, pages: { $gt: 120 } } }, { $sort: { pages : -1 } }]", 4)]
+        [InlineData("historicalbooks", "[{ $match: { title: /^(the|a)/i, pages: { $gt: 120 } } }, { $sort: { pages : -1 } }, { $limit: 2 }]", 2)]
+        [InlineData("historicalbooks", "[{ $match: { title: /^(the|a)/i } }, { $limit: 200 }]", 6)]
         public async Task Aggregate_Match(string collectionName, string aggregateExpression, int expectedCount)
         {
             var repo = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
-
-            var items = new List<string>() 
-            {
-                "{ 'title': 'The Red Badge of Courage', 'author': 'Stephen Crane', 'pages': 112, 'isbn': { 'isbn-10' : '0486264653', 'isbn-13' : '978-0486264653' } }",
-                "{ 'title': 'Don Quixote', 'author': 'Miguel De Cervantes', 'pages': 992, 'isbn': { 'isbn-10' : '0060934344', 'isbn-13' : '978-0060934347' } }",
-                "{ 'title': 'The Grapes of Wrath', 'author': 'John Steinbeck', 'pages': 464, 'isbn': { 'isbn-10' : '0143039431', 'isbn-13' : '978-0143039433' } }",
-                "{ 'title': 'The Catcher in the Rye', 'author': 'J. D. Salinger', 'pages': 288, 'isbn': { 'isbn-10' : '9780316769174', 'isbn-13' : '978-0316769174' } }",
-                "{ 'title': 'Slaughterhouse-Five', 'author': 'Kurt Vonnegut', 'pages': 288, 'isbn': { 'isbn-10' : '0812988523', 'isbn-13' : '978-0812988529' } }",
-                "{ 'title': 'Of Mice and Men', 'author': 'John Steinbeck', 'pages': 112, 'isbn': { 'isbn-10' : '0140177396', 'isbn-13' : '978-0140177398' } }",
-                "{ 'title': 'A Connecticut Yankee in King Arthurs Court', 'author' : 'Mark Twain', 'pages': 116, 'isbn': { 'isbn-10' : '1517061385', 'isbn-13' : '978-1517061388' } }",
-                "{ 'title': 'Gone with the Wind', 'author': 'Margaret Mitchell', 'pages': 960, 'isbn': { 'isbn-10' : '1451635621', 'isbn-13' : '978-1451635621' } }",
-                "{ 'title': 'Fahrenheit 451', 'author': 'Ray Bradbury', 'pages': 249, 'isbn': { 'isbn-10' : '9781451673319', 'isbn-13' : '978-1451673319' } }",
-                "{ 'title': 'The Old Man and the Sea', 'author': 'Ernest Hemingway', 'pages': 128, 'isbn': { 'isbn-10' : '0684801221', 'isbn-13' : '978-0684801223' } }",
-                "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
-            };
-
-            var insertManyResult = await repo.InsertManyAsync(items);
-            Assert.Equal(201, insertManyResult.Status);
-            Assert.Equal(11, insertManyResult.Value.Count());
 
             var aggregateResult = await repo.AggregateAsync(aggregateExpression);
             var array = JArray.Parse(aggregateResult.Value);
@@ -516,29 +456,10 @@ namespace Foundation.Sdk.Tests
         }
 
         [Theory]
-        [InlineData("aggregatedBooksCount101", "[{ $match: { title: /^(the|a)/i } }, { $count: \"numberOfBooks\" }]", "numberOfBooks", 6)]
+        [InlineData("historicalbooks", "[{ $match: { title: /^(the|a)/i } }, { $count: \"numberOfBooks\" }]", "numberOfBooks", 6)]
         public async Task Aggregate_Count(string collectionName, string aggregateExpression, string propertyName, int expectedCount)
         {
             IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
-
-            var items = new List<string>() 
-            {
-                "{ 'title': 'The Red Badge of Courage', 'author': 'Stephen Crane', 'pages': 112, 'isbn': { 'isbn-10' : '0486264653', 'isbn-13' : '978-0486264653' } }",
-                "{ 'title': 'Don Quixote', 'author': 'Miguel De Cervantes', 'pages': 992, 'isbn': { 'isbn-10' : '0060934344', 'isbn-13' : '978-0060934347' } }",
-                "{ 'title': 'The Grapes of Wrath', 'author': 'John Steinbeck', 'pages': 464, 'isbn': { 'isbn-10' : '0143039431', 'isbn-13' : '978-0143039433' } }",
-                "{ 'title': 'The Catcher in the Rye', 'author': 'J. D. Salinger', 'pages': 288, 'isbn': { 'isbn-10' : '9780316769174', 'isbn-13' : '978-0316769174' } }",
-                "{ 'title': 'Slaughterhouse-Five', 'author': 'Kurt Vonnegut', 'pages': 288, 'isbn': { 'isbn-10' : '0812988523', 'isbn-13' : '978-0812988529' } }",
-                "{ 'title': 'Of Mice and Men', 'author': 'John Steinbeck', 'pages': 112, 'isbn': { 'isbn-10' : '0140177396', 'isbn-13' : '978-0140177398' } }",
-                "{ 'title': 'A Connecticut Yankee in King Arthurs Court', 'author' : 'Mark Twain', 'pages': 116, 'isbn': { 'isbn-10' : '1517061385', 'isbn-13' : '978-1517061388' } }",
-                "{ 'title': 'Gone with the Wind', 'author': 'Margaret Mitchell', 'pages': 960, 'isbn': { 'isbn-10' : '1451635621', 'isbn-13' : '978-1451635621' } }",
-                "{ 'title': 'Fahrenheit 451', 'author': 'Ray Bradbury', 'pages': 249, 'isbn': { 'isbn-10' : '9781451673319', 'isbn-13' : '978-1451673319' } }",
-                "{ 'title': 'The Old Man and the Sea', 'author': 'Ernest Hemingway', 'pages': 128, 'isbn': { 'isbn-10' : '0684801221', 'isbn-13' : '978-0684801223' } }",
-                "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
-            };
-
-            var insertManyResult = await service.InsertManyAsync(items);
-            Assert.Equal(201, insertManyResult.Status);
-            Assert.Equal(11, insertManyResult.Value.Count());
 
             var aggregateResult = await service.AggregateAsync(aggregateExpression);
             Assert.Equal(200, aggregateResult.Status);
@@ -550,31 +471,12 @@ namespace Foundation.Sdk.Tests
         }
 
         [Theory]
-        [InlineData("distinctBooks101", "author", "{}", 10)]
-        [InlineData("distinctBooks102", "title", "{}", 11)]
-        [InlineData("distinctBooks103", "title", "{ title: /^(the|a)/i }", 6)]
+        [InlineData("historicalbooks", "author", "{}", 10)]
+        [InlineData("historicalbooks", "title", "{}", 11)]
+        [InlineData("historicalbooks", "title", "{ title: /^(the|a)/i }", 6)]
         public async Task Distinct(string collectionName, string fieldName, string findExpression, int expectedCount)
         {
             IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
-
-            var items = new List<string>() 
-            {
-                "{ 'title': 'The Red Badge of Courage', 'author': 'Stephen Crane', 'pages': 112, 'isbn': { 'isbn-10' : '0486264653', 'isbn-13' : '978-0486264653' } }",
-                "{ 'title': 'Don Quixote', 'author': 'Miguel De Cervantes', 'pages': 992, 'isbn': { 'isbn-10' : '0060934344', 'isbn-13' : '978-0060934347' } }",
-                "{ 'title': 'The Grapes of Wrath', 'author': 'John Steinbeck', 'pages': 464, 'isbn': { 'isbn-10' : '0143039431', 'isbn-13' : '978-0143039433' } }",
-                "{ 'title': 'The Catcher in the Rye', 'author': 'J. D. Salinger', 'pages': 288, 'isbn': { 'isbn-10' : '9780316769174', 'isbn-13' : '978-0316769174' } }",
-                "{ 'title': 'Slaughterhouse-Five', 'author': 'Kurt Vonnegut', 'pages': 288, 'isbn': { 'isbn-10' : '0812988523', 'isbn-13' : '978-0812988529' } }",
-                "{ 'title': 'Of Mice and Men', 'author': 'John Steinbeck', 'pages': 112, 'isbn': { 'isbn-10' : '0140177396', 'isbn-13' : '978-0140177398' } }",
-                "{ 'title': 'A Connecticut Yankee in King Arthurs Court', 'author' : 'Mark Twain', 'pages': 116, 'isbn': { 'isbn-10' : '1517061385', 'isbn-13' : '978-1517061388' } }",
-                "{ 'title': 'Gone with the Wind', 'author': 'Margaret Mitchell', 'pages': 960, 'isbn': { 'isbn-10' : '1451635621', 'isbn-13' : '978-1451635621' } }",
-                "{ 'title': 'Fahrenheit 451', 'author': 'Ray Bradbury', 'pages': 249, 'isbn': { 'isbn-10' : '9781451673319', 'isbn-13' : '978-1451673319' } }",
-                "{ 'title': 'The Old Man and the Sea', 'author': 'Ernest Hemingway', 'pages': 128, 'isbn': { 'isbn-10' : '0684801221', 'isbn-13' : '978-0684801223' } }",
-                "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
-            };
-
-            var insertManyResult = await service.InsertManyAsync(items);
-            Assert.Equal(201, insertManyResult.Status);
-            Assert.Equal(11, insertManyResult.Value.Count());
 
             var distinctResult = await service.GetDistinctAsync(fieldName, findExpression);
             Assert.Equal(200, distinctResult.Status);            
@@ -582,32 +484,13 @@ namespace Foundation.Sdk.Tests
         }
 
         [Theory]
-        [InlineData("countBooks101", "{}", 11)]
-        [InlineData("countBooks102", "{ title: /^(the|a)/i }", 6)]
-        [InlineData("countBooks103", "{ title: /^(the)/i }", 5)]
-        [InlineData("countBooks104", "{ title: /^(a)/i }", 1)]
+        [InlineData("historicalbooks", "{}", 11)]
+        [InlineData("historicalbooks", "{ title: /^(the|a)/i }", 6)]
+        [InlineData("historicalbooks", "{ title: /^(the)/i }", 5)]
+        [InlineData("historicalbooks", "{ title: /^(a)/i }", 1)]
         public async Task Count(string collectionName, string findExpression, int expectedCount)
         {
             IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
-
-            var items = new List<string>() 
-            {
-                "{ 'title': 'The Red Badge of Courage', 'author': 'Stephen Crane', 'pages': 112, 'isbn': { 'isbn-10' : '0486264653', 'isbn-13' : '978-0486264653' } }",
-                "{ 'title': 'Don Quixote', 'author': 'Miguel De Cervantes', 'pages': 992, 'isbn': { 'isbn-10' : '0060934344', 'isbn-13' : '978-0060934347' } }",
-                "{ 'title': 'The Grapes of Wrath', 'author': 'John Steinbeck', 'pages': 464, 'isbn': { 'isbn-10' : '0143039431', 'isbn-13' : '978-0143039433' } }",
-                "{ 'title': 'The Catcher in the Rye', 'author': 'J. D. Salinger', 'pages': 288, 'isbn': { 'isbn-10' : '9780316769174', 'isbn-13' : '978-0316769174' } }",
-                "{ 'title': 'Slaughterhouse-Five', 'author': 'Kurt Vonnegut', 'pages': 288, 'isbn': { 'isbn-10' : '0812988523', 'isbn-13' : '978-0812988529' } }",
-                "{ 'title': 'Of Mice and Men', 'author': 'John Steinbeck', 'pages': 112, 'isbn': { 'isbn-10' : '0140177396', 'isbn-13' : '978-0140177398' } }",
-                "{ 'title': 'A Connecticut Yankee in King Arthurs Court', 'author' : 'Mark Twain', 'pages': 116, 'isbn': { 'isbn-10' : '1517061385', 'isbn-13' : '978-1517061388' } }",
-                "{ 'title': 'Gone with the Wind', 'author': 'Margaret Mitchell', 'pages': 960, 'isbn': { 'isbn-10' : '1451635621', 'isbn-13' : '978-1451635621' } }",
-                "{ 'title': 'Fahrenheit 451', 'author': 'Ray Bradbury', 'pages': 249, 'isbn': { 'isbn-10' : '9781451673319', 'isbn-13' : '978-1451673319' } }",
-                "{ 'title': 'The Old Man and the Sea', 'author': 'Ernest Hemingway', 'pages': 128, 'isbn': { 'isbn-10' : '0684801221', 'isbn-13' : '978-0684801223' } }",
-                "{ 'title': 'The Great Gatsby', 'author': 'F. Scott Fitzgerald', 'pages': 180, 'isbn': { 'isbn-10' : '9780743273565', 'isbn-13' : '978-0743273565' } }",
-            };
-
-            var insertManyResult = await service.InsertManyAsync(items);
-            Assert.Equal(201, insertManyResult.Status);
-            Assert.Equal(11, insertManyResult.Value.Count());
 
             var distinctResult = await service.CountAsync(findExpression);
             Assert.Equal(200, distinctResult.Status);            
@@ -623,6 +506,7 @@ namespace Foundation.Sdk.Tests
         public IMongoClient MongoClient { get; set; }
         public IObjectService CustomersService { get; private set; }
         public IObjectService BooksService { get; private set; }
+        public List<string> Books = new List<string>();
 
         public MongoServiceFixture()
         {
@@ -632,6 +516,31 @@ namespace Foundation.Sdk.Tests
 
             CustomersService = new MongoService(MongoClient, "bookstore", "customer", Logger);
             BooksService = new MongoService(MongoClient, "bookstore", "books", Logger);
+
+            LoadBooks();
+        }
+
+        private void LoadBooks()
+        {
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+
+            var path = Path.Combine(basePath, "Resources", "books");
+
+            DirectoryInfo dir = new DirectoryInfo(path);
+
+            var jsonFiles = dir.GetFiles("*.json");
+
+            foreach (var jsonFile in jsonFiles)
+            {
+                var json = File.ReadAllText(jsonFile.FullName);
+                Books.Add(json);
+            }
+
+            IObjectService service = new MongoService(MongoClient, "bookstore", "historicalbooks", Logger);
+            var insertManyResult = service.InsertManyAsync(Books).Result;
+
+            Assert.Equal(201, insertManyResult.Status);
+            Assert.Equal(jsonFiles.Length, insertManyResult.Value.Count());
         }
 
         public void Dispose()
