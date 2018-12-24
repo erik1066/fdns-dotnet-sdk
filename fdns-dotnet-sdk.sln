@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundation.Sdk", "src\Foundation.Sdk.csproj", "{5D1D18DA-A18E-4284-8652-FC7281C4E3DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundation.Sdk.Tests", "tests\Foundation.Sdk.Tests.csproj", "{C8341445-5A39-47CB-9AC3-3E146BA02E40}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foundation.Sdk.Tests", "tests\unit\Foundation.Sdk.Tests.csproj", "{C8341445-5A39-47CB-9AC3-3E146BA02E40}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
