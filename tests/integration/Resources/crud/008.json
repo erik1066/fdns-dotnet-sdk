@@ -1,0 +1,10 @@
+[{
+    "type": "delete-by-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"The Red Badge of Courage\" }",
+    "id": 51,
+    "expected": {
+        "status": 200
+    },
+    "purpose": "Test whether an object with a non-ObjectID identifier can be deleted"
+}]

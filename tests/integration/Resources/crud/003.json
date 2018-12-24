@@ -1,0 +1,71 @@
+[{
+    "type": "insert-with-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"The Red Badge of Courage\" }",
+    "id": 11,
+    "expected": {
+        "status": 201,
+        "value": "{ \"_id\" : \"11\", \"title\" : \"The Red Badge of Courage\" }"
+    },
+    "purpose": "Test whether an object with a non-ObjectID identifier can be inserted"
+},
+{
+    "type": "insert-with-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"The Red Badge of Courage\" ",
+    "id": 12,
+    "expected": {
+        "status": 400
+    },
+    "purpose": "Test whether the service returns a 400 when given invalid Json. Variation: Missing closing brace"
+},
+{
+    "type": "insert-with-primitive-id",
+    "contentType": "application/json",
+    "data": " \"title\": \"The Red Badge of Courage\" }",
+    "id": 13,
+    "expected": {
+        "status": 400
+    },
+    "purpose": "Test whether the service returns a 400 when given invalid Json. Variation: Missing opening brace"
+},
+{
+    "type": "insert-with-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"The Red Badge of Courage\" }",
+    "id": 14,
+    "expected": {
+        "status": 400
+    },
+    "purpose": "Test whether the service returns a 400 when given invalid Json. Variation: Missing property name"
+},
+{
+    "type": "insert-with-primitive-id",
+    "contentType": "application/json",
+    "data": "",
+    "id": 15,
+    "expected": {
+        "status": 400
+    },
+    "purpose": "Test whether the service returns a 400 when given invalid Json. Variation: Empty string"
+},
+{
+    "type": "insert-with-primitive-id",
+    "contentType": "application/json",
+    "data": "ABCD",
+    "id": 16,
+    "expected": {
+        "status": 400
+    },
+    "purpose": "Test whether the service returns a 400 when given invalid Json. Variation: Regular string literal"
+},
+{
+    "type": "insert-with-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"book.title\": \"The Red Badge of Courage\" }",
+    "id": 17,
+    "expected": {
+        "status": 400
+    },
+    "purpose": "Test whether the service returns a 400 when given invalid Json. Variation: Invalid character (period) in json property name"
+}]

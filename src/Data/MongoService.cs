@@ -175,6 +175,10 @@ namespace Foundation.Sdk.Data
             {
                 return GetBadRequestResult(Common.GetCorrelationIdFromHeaders(headers), "Unable to process this object. An object with this key already exists.");
             }
+            catch (MongoDB.Bson.BsonSerializationException)
+            {
+                return GetBadRequestResult(Common.GetCorrelationIdFromHeaders(headers), "Unable to process this object due to malformed object structure or invalid Json.");
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{_serviceName}: Insert failed on {_database}/{_collection}/{id}");

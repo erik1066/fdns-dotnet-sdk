@@ -179,7 +179,7 @@ namespace Foundation.Sdk.Data
             {
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<SearchResults<string>> result = null;
-                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, findExpression);
+                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_TEXT_PLAIN, headers, findExpression);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
                     result = await Common.GetHttpResultAsServiceResultOfSearchResultsAsync(response, Common.OBJECT_SERVICE_NAME, url, headers, start);
@@ -222,6 +222,10 @@ namespace Foundation.Sdk.Data
             var url = GetStandardItemUrl(id.ToString());
             try
             {
+                if (string.IsNullOrEmpty(entity))
+                {
+                    throw new ArgumentNullException(nameof(entity));
+                }
                 var payload = SerializeEntity(entity);
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<string> result = null;
@@ -232,6 +236,14 @@ namespace Foundation.Sdk.Data
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Update completed on {_client.BaseAddress}{url}");
                 return result;
+            }
+            catch (Exception ex) when (ex is Newtonsoft.Json.JsonSerializationException || ex is System.FormatException)
+            {
+                return GetBadRequestResult(Common.GetCorrelationIdFromHeaders(headers), "Unable to process this object due to malformed object structure.");
+            }
+            catch (ArgumentNullException ex) when (ex.Message.Equals(nameof(entity)))
+            {
+                return GetBadRequestResult(Common.GetCorrelationIdFromHeaders(headers), "Unable to process an empty object.");
             }
             catch (Exception ex)
             {
@@ -324,6 +336,11 @@ namespace Foundation.Sdk.Data
             
             try
             {
+                if (string.IsNullOrEmpty(entity))
+                {
+                    throw new ArgumentNullException(nameof(entity));
+                }
+
                 entity = ForceAddIdToJsonObject(id, entity);
 
                 headers = Common.NormalizeHeaders(headers);
@@ -335,6 +352,14 @@ namespace Foundation.Sdk.Data
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Insert completed on {_client.BaseAddress}{url}");
                 return result;
+            }
+            catch (ArgumentNullException ex) when (ex.ParamName.Equals(nameof(entity)))
+            {
+                return GetBadRequestResult(Common.GetCorrelationIdFromHeaders(headers), "Unable to process an empty object.");
+            }
+            catch (Exception ex) when (ex is Newtonsoft.Json.JsonReaderException || ex is Newtonsoft.Json.JsonSerializationException || ex is System.FormatException)
+            {
+                return GetBadRequestResult(Common.GetCorrelationIdFromHeaders(headers), "Unable to process this object due to malformed object structure.");
             }
             catch (Exception ex)
             {
@@ -393,6 +418,10 @@ namespace Foundation.Sdk.Data
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Aggregate completed on {_client.BaseAddress}{url}");
                 return result;
+            }
+            catch (Exception ex) when (ex is Newtonsoft.Json.JsonSerializationException || ex is System.FormatException)
+            {
+                return GetBadRequestResult(Common.GetCorrelationIdFromHeaders(headers), "Unable to process this object due to malformed object structure.");
             }
             catch (Exception ex)
             {
@@ -496,8 +525,6 @@ namespace Foundation.Sdk.Data
         /// <returns>The Json object with an 'id' property and the specified id value</returns>
         private string ForceAddIdToJsonObject(object id, string json)
         {
-            // (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());
-
             var values = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
             if (values.ContainsKey(ID_PROPERTY_NAME))
             {
@@ -505,9 +532,13 @@ namespace Foundation.Sdk.Data
                 {
                     values[ID_PROPERTY_NAME] = id;
                 }
-                else
+                else if (id == null)
                 {
-                    values.Remove(ID_PROPERTY_NAME);
+                    var idValue = values[ID_PROPERTY_NAME];
+                    if (idValue is string)
+                    {
+                        values.Remove(ID_PROPERTY_NAME);
+                    }
                 }
             }
             else if (id != null)
@@ -524,5 +555,12 @@ namespace Foundation.Sdk.Data
             bool isObjectId = ObjectId.TryParse(id.ToString(), out ObjectId objectId);
             return (isObjectId, objectId);
         }
+
+        private ServiceResult<string> GetBadRequestResult(string correlationId, string message = "") => new ServiceResult<string>(
+                value: string.Empty,
+                status: (int)HttpStatusCode.BadRequest,
+                correlationId: correlationId,
+                servicename: Common.OBJECT_SERVICE_NAME,
+                message: !string.IsNullOrEmpty(message) ? message : "Invalid inputs");
     }
 }

@@ -65,9 +65,7 @@ namespace Foundation.Sdk
 
             var items = new List<string>();
 
-            JObject obj = JObject.Parse(json);
-
-            JArray array = JArray.Parse(obj["items"].ToString());
+            JArray array = JArray.Parse(json);
             foreach (var jObject in array)
             {
                 var item = jObject.ToString();

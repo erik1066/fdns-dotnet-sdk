@@ -1,0 +1,64 @@
+[{
+    "type": "get-by-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"The Red Badge of Courage\" }",
+    "id": 1,
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : \"1\", \"title\" : \"The Red Badge of Courage\" }"
+    },
+    "purpose": "Test whether an object with a non-ObjectID identifier can be retrieved"
+},
+{
+    "type": "get-by-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"A Connecticut Yankee in King Arthur's Court\" }",
+    "id": 2,
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : \"2\", \"title\" : \"A Connecticut Yankee in King Arthur's Court\" }"
+    },
+    "purpose": "Test whether an object with a non-ObjectID identifier can be retrieved. Variation: Handles apostrophes in string literals (title)"
+},
+{
+    "type": "get-by-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"A Connecticut Yankee in King Arthur's Court\", \"pages\": 116 }",
+    "id": 3,
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : \"3\", \"title\" : \"A Connecticut Yankee in King Arthur's Court\", \"pages\" : 116 }"
+    },
+    "purpose": "Test whether an object with a non-ObjectID identifier can be retrieved. Variation: Handles integer property values (pages)"
+},
+{
+    "type": "get-by-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"Of Mice and Men\", \"author\": \"John Steinbeck\", \"pages\": 112, \"isbn\": { \"isbn-10\": \"0140177396\", \"isbn-13\": \"978-0140177398\" } }",
+    "id": 4,
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : \"4\", \"title\" : \"Of Mice and Men\", \"author\" : \"John Steinbeck\", \"pages\" : 112, \"isbn\" : { \"isbn-10\" : \"0140177396\", \"isbn-13\" : \"978-0140177398\" } }"
+    },
+    "purpose": "Test whether an object with a non-ObjectID identifier can be retrieved. Variation: Handles object property values (isbn)"
+},
+{
+    "type": "get-by-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"Fahrenheit 451\", \"author\": \"Ray Bradbury\", \"pages\": 249, \"tags\": [ \"dystopian\", \"firemen\" ] }",
+    "id": 5,
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : \"5\", \"title\" : \"Fahrenheit 451\", \"author\" : \"Ray Bradbury\", \"pages\" : 249, \"tags\" : [\"dystopian\", \"firemen\"] }"
+    },
+    "purpose": "Test whether an object with a non-ObjectID identifier can be retrieved. Variation: Handles array property values (tags)"
+},
+{
+    "type": "get-by-primitive-id",
+    "contentType": "application/json",
+    "id": 6,
+    "expected": {
+        "status": 404
+    },
+    "purpose": "Test whether the service returns a 404 (not found) when given a non-existent non-ObjectID identifier"
+}]

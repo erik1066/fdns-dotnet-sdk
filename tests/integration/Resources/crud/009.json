@@ -1,0 +1,9 @@
+[{
+    "type": "delete-by-objectid",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"The Red Badge of Courage\" }",
+    "expected": {
+        "status": 200
+    },
+    "purpose": "Test whether an object with an OID can be deleted"
+}]

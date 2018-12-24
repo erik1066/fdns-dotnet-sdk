@@ -1,0 +1,19 @@
+[{
+    "type": "insert-fail-duplicate-id",
+    "contentType": "application/json",
+    "data": "{ \"title\" : \"Red Badge of Courage\" }",
+    "id": 41,
+    "expected": {
+        "status": 400
+    },
+    "purpose": "Test whether the service disallows inserting an object when an object with the specified Id already exists"
+},
+{
+    "type": "insert-fail-duplicate-id",
+    "contentType": "application/json",
+    "data": "{ \"_id\" : { \"$oid\" : \"5c211b79b920cb11da0c9087\" }, \"title\" : \"Red Badge of Courage\" }",
+    "expected": {
+        "status": 400
+    },
+    "purpose": "Test whether the service disallows inserting an object when an object with the specified Id already exists"
+}]

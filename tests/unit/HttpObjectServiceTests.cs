@@ -167,7 +167,7 @@ namespace Foundation.Sdk.Tests
                 .Respond(HttpStatusCode.OK, "application/json", "{ \"count\": 2 }");
 
             mockHttp.When("http://localhost/bookstore/customer/find?from=0&order=1&size=-1")
-                .Respond(HttpStatusCode.OK, "application/json", "{ \"total\": 2, \"items\": [ { \"firstName\": \"John\", \"lastName\": \"Smith\", \"_id\": \"1\", \"age\": 32 }, { \"firstName\": \"Mary\", \"lastName\": \"Jane\", \"_id\": \"2\", \"age\": 39 } ] }");
+                .Respond(HttpStatusCode.OK, "application/json", "[ { \"firstName\": \"John\", \"lastName\": \"Smith\", \"_id\": \"1\", \"age\": 32 }, { \"firstName\": \"Mary\", \"lastName\": \"Jane\", \"_id\": \"2\", \"age\": 39 } ]");
 
             mockHttp.When("http://localhost/bookstore/customer/3")
                 .Respond(HttpStatusCode.OK, "application/json", "{ \"deleted\": 1, \"success\": true }");
