@@ -12,8 +12,30 @@
 {
     "type": "insert-with-primitive-id",
     "contentType": "application/json",
-    "data": "{ \"title\": \"The Red Badge of Courage\" ",
+    "data": "{ \"_id\" : \"434634\", \"title\": \"The Red Badge of Courage\" }",
     "id": 12,
+    "expected": {
+        "status": 201,
+        "value": "{ \"_id\" : \"12\", \"title\" : \"The Red Badge of Courage\" }"
+    },
+    "purpose": "Test whether an object with a non-ObjectID identifier can be inserted. Variation: Object already has an _id string property"
+},
+{
+    "type": "insert-with-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"_id\" : 434634, \"title\": \"The Red Badge of Courage\" }",
+    "id": 13,
+    "expected": {
+        "status": 201,
+        "value": "{ \"_id\" : \"13\", \"title\" : \"The Red Badge of Courage\" }"
+    },
+    "purpose": "Test whether an object with a non-ObjectID identifier can be inserted. Variation: Object already has an _id integer property"
+},
+{
+    "type": "insert-with-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"The Red Badge of Courage\" ",
+    "id": 14,
     "expected": {
         "status": 400
     },
@@ -23,7 +45,7 @@
     "type": "insert-with-primitive-id",
     "contentType": "application/json",
     "data": " \"title\": \"The Red Badge of Courage\" }",
-    "id": 13,
+    "id": 15,
     "expected": {
         "status": 400
     },
@@ -33,7 +55,7 @@
     "type": "insert-with-primitive-id",
     "contentType": "application/json",
     "data": "{ \"The Red Badge of Courage\" }",
-    "id": 14,
+    "id": 16,
     "expected": {
         "status": 400
     },
@@ -43,7 +65,7 @@
     "type": "insert-with-primitive-id",
     "contentType": "application/json",
     "data": "",
-    "id": 15,
+    "id": 17,
     "expected": {
         "status": 400
     },
@@ -53,7 +75,7 @@
     "type": "insert-with-primitive-id",
     "contentType": "application/json",
     "data": "ABCD",
-    "id": 16,
+    "id": 18,
     "expected": {
         "status": 400
     },
@@ -63,7 +85,7 @@
     "type": "insert-with-primitive-id",
     "contentType": "application/json",
     "data": "{ \"book.title\": \"The Red Badge of Courage\" }",
-    "id": 17,
+    "id": 19,
     "expected": {
         "status": 400
     },
