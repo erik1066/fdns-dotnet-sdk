@@ -171,7 +171,17 @@ namespace Foundation.Sdk.IntegrationTests
                                     if (insertResult.IsSuccess)
                                     {
                                         JObject insertedObject = JObject.Parse(insertResult.Value);
-                                        id = insertedObject["_id"]["$oid"].ToString();
+
+                                        var insertedId = insertedObject["_id"];
+
+                                        if (insertedId is JObject)
+                                        {
+                                            id = insertedObject["_id"]["$oid"].ToString();
+                                        }
+                                        else
+                                        {
+                                            id = insertedObject["_id"].ToString();                                            
+                                        }
 
                                         var retrievalResult = service.GetAsync(id).Result;
                                         Assert.Equal(200, retrievalResult.Status);

@@ -26,10 +26,9 @@
     "data": "{ \"_id\" : 434634, \"title\": \"The Red Badge of Courage\" }",
     "id": 13,
     "expected": {
-        "status": 201,
-        "value": "{ \"_id\" : \"13\", \"title\" : \"The Red Badge of Courage\" }"
+        "status": 400
     },
-    "purpose": "Test whether an object with a non-ObjectID identifier can be inserted. Variation: Object already has an _id integer property"
+    "purpose": "Test whether the service returns a 400 when given an _id in integer format"
 },
 {
     "type": "insert-with-primitive-id",

@@ -148,6 +148,11 @@ namespace Foundation.Sdk.Data
             {
                 var document = BsonDocument.Parse(entity);
 
+                if (document.Contains("_id") && document["_id"].GetType() != typeof(BsonObjectId) && document["_id"].GetType() != typeof(BsonString))
+                {
+                    return GetBadRequestResult(Common.GetCorrelationIdFromHeaders(headers), "Unable to process this object due to invalid _id format.");
+                }
+
                 if (id != null)
                 {
                     (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());                    
@@ -164,7 +169,10 @@ namespace Foundation.Sdk.Data
                 await _collection.InsertOneAsync(document);
                 id = document.GetValue("_id");
                 var result = await GetAsync(id, headers);
-                result.Status = (int)HttpStatusCode.Created;
+                if (result.IsSuccess)
+                {
+                    result.Status = (int)HttpStatusCode.Created;
+                }
                 return result;
             }
             catch (System.FormatException)

@@ -362,6 +362,10 @@ namespace Foundation.Sdk.Data
             {
                 return GetBadRequestResult(Common.GetCorrelationIdFromHeaders(headers), "Unable to process this object due to malformed object structure.");
             }
+            catch (Exception ex) when (ex is InvalidOperationException)
+            {
+                return GetBadRequestResult(Common.GetCorrelationIdFromHeaders(headers), ex.Message);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Insert failed on {_client.BaseAddress}{url}");
@@ -509,12 +513,7 @@ namespace Foundation.Sdk.Data
 
         private string SerializeEntity(string entity) => entity.ToString();
 
-        private string SerializeEntities(IEnumerable<string> entity) 
-        {
-            string json = "[" + string.Join(", ", entity) + "]";
-            return json;
-            //Newtonsoft.Json.JsonConvert.SerializeObject(entity, JsonSerializerSettings);
-        }
+        private string SerializeEntities(IEnumerable<string> entity) => "[" + string.Join(", ", entity) + "]";
 
         private string GetStandardItemUrl(string id) => $"{_databaseName}/{_collectionName}/{id}";
 
@@ -535,17 +534,15 @@ namespace Foundation.Sdk.Data
             var values = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
             if (values.ContainsKey(ID_PROPERTY_NAME))
             {
+                object idValue = values[ID_PROPERTY_NAME];
+                if (idValue.GetType() != typeof(string) && idValue.GetType() != typeof(object) && idValue.GetType() != typeof(Newtonsoft.Json.Linq.JObject))
+                {
+                    throw new InvalidOperationException("_id value must be a string or an OID");                    
+                }
+
                 if (id != null)
                 {
                     values[ID_PROPERTY_NAME] = id;
-                }
-                else if (id == null)
-                {
-                    var idValue = values[ID_PROPERTY_NAME];
-                    if (idValue is string)
-                    {
-                        values.Remove(ID_PROPERTY_NAME);
-                    }
                 }
             }
             else if (id != null)
