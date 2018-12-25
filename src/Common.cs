@@ -56,6 +56,26 @@ namespace Foundation.Sdk
             return result;
         }
 
+        public static async Task<ServiceResult<IEnumerable<string>>> GetHttpResultAsServiceResultListAsync(HttpResponseMessage response, string serviceName, string uri, Dictionary<string, string> headers)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var json = await response.Content.ReadAsStringAsync();
+            sw.Stop();
+
+            var items = new List<string>();
+
+            JArray array = JArray.Parse(json);
+            foreach (var jObject in array)
+            {
+                var item = jObject.ToString();
+                items.Add(item);
+            }
+
+            var result = new ServiceResult<IEnumerable<string>>(value: items, status: (int)response.StatusCode, correlationId: GetCorrelationIdFromHeaders(headers), message: GetErrorMessage(response, json), servicename: serviceName);
+            return result;
+        }
+
         public static async Task<ServiceResult<SearchResults<string>>> GetHttpResultAsServiceResultOfSearchResultsAsync(HttpResponseMessage response, string serviceName, string uri, Dictionary<string, string> headers, int start)
         {
             var sw = new Stopwatch();

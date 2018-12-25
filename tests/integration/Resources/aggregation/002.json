@@ -1,0 +1,100 @@
+[{
+    "type": "aggregate",
+    "data": [
+        {
+            "title": "The Red Badge of Courage",
+            "author": "Stephen Crane",
+            "pages": 112,
+            "isbn": {
+                "isbn-10": "0486264653",
+                "isbn-13": "978-0486264653"
+            }
+        },
+        {
+            "title": "Don Quixote",
+            "author": "Miguel De Cervantes",
+            "pages": 992,
+            "isbn": {
+                "isbn-10": "0060934344",
+                "isbn-13": "978-0060934347"
+            }
+        },
+        {
+            "title": "The Grapes of Wrath",
+            "author": "John Steinbeck",
+            "pages": 464,
+            "isbn": {
+                "isbn-10": "0143039431",
+                "isbn-13": "978-0143039433"
+            }
+        },
+        {
+            "title": "The Catcher in the Rye",
+            "author": "J. D. Salinger",
+            "pages": 288,
+            "isbn": {
+                "isbn-10": "9780316769174",
+                "isbn-13": "978-0316769174"
+            }
+        },
+        {
+            "title": "A Connecticut Yankee in King Arthur's Court",
+            "author": "Mark Twain",
+            "pages": 116,
+            "isbn": {
+                "isbn-10": "1517061385",
+                "isbn-13": "978-1517061388"
+            }
+        },
+        {
+            "title": "Gone with the Wind",
+            "author": "Margaret Mitchell",
+            "pages": 960,
+            "isbn": {
+                "isbn-10": "1451635621",
+                "isbn-13": "978-1451635621"
+            }
+        },
+        {
+            "title": "Fahrenheit 451",
+            "author": "Ray Bradbury",
+            "pages": 249,
+            "isbn": {
+                "isbn-10": "9781451673319",
+                "isbn-13": "978-1451673319"
+            }
+        },
+        {
+            "title": "The Old Man and the Sea",
+            "author": "Ernest Hemingway",
+            "pages": 128,
+            "isbn": {
+                "isbn-10": "0684801221",
+                "isbn-13": "978-0684801223"
+            }
+        },
+        {
+            "title": "The Great Gatsby",
+            "author": "F. Scott Fitzgerald",
+            "pages": 180,
+            "isbn": {
+                "isbn-10": "9780743273565",
+                "isbn-13": "978-0743273565"
+            }
+        }
+    ],
+    "expected": {
+        "status": 200,
+        "expression": "[{ $match: { title: /^(the|a)/i } }, { $sort: { pages : -1 } }]",
+        "property": "title",
+        "values": [ 
+            "The Grapes of Wrath",
+            "The Catcher in the Rye",
+            "The Great Gatsby",
+            "The Old Man and the Sea",
+            "A Connecticut Yankee in King Arthur's Court",
+            "The Red Badge of Courage"
+        ]
+    },
+    "purpose": "Test whether aggregation works successfully. Variation: Match and sort pipelines."
+}]

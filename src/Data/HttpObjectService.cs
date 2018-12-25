@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
+using System.Text;
 using System.Text.RegularExpressions;
-using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -77,7 +78,7 @@ namespace Foundation.Sdk.Data
             _databaseName = databaseName;
             _collectionName = collectionName;
             SendingServiceName = appName;
-            JsonSerializerSettings = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore, ContractResolver = new CamelCasePropertyNamesContractResolver() };
+            JsonSerializerSettings = new JsonSerializerSettings() { Formatting = Formatting.None, NullValueHandling = NullValueHandling.Ignore, ContractResolver = new CamelCasePropertyNamesContractResolver() };
         }
 
         /// <summary>
@@ -133,7 +134,7 @@ namespace Foundation.Sdk.Data
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Get, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
-                    result = await Common.GetHttpResultAsServiceResultAsync<IEnumerable<string>>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    result = await Common.GetHttpResultAsServiceResultListAsync(response, Common.OBJECT_SERVICE_NAME, url, headers);
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all completed on {_client.BaseAddress}{url}");
                 return result;
@@ -386,6 +387,7 @@ namespace Foundation.Sdk.Data
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
                     var insertManyResult = await Common.GetHttpResultAsServiceResultAsync<InsertManyResult>(response, Common.OBJECT_SERVICE_NAME, url, headers);
+                    insertManyResult.Status = 201;
                     result = ServiceResult<IEnumerable<string>>.CreateNewUsingDetailsFrom<InsertManyResult>(insertManyResult.Value.Ids, insertManyResult);
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Insert completed on {_client.BaseAddress}{url}");
@@ -411,7 +413,7 @@ namespace Foundation.Sdk.Data
             {
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<string> result = null;
-                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, aggregationExpression);
+                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_TEXT_PLAIN, headers, aggregationExpression);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.OBJECT_SERVICE_NAME, url, headers);
@@ -479,7 +481,7 @@ namespace Foundation.Sdk.Data
                 var url = $"{GetStandardUrl("distinct")}/{fieldName}";
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<List<string>> result = null;
-                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_APPLICATION_JSON, headers, payload);
+                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_TEXT_PLAIN, headers, payload);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<List<string>>(response, Common.OBJECT_SERVICE_NAME, url, headers);
@@ -507,7 +509,12 @@ namespace Foundation.Sdk.Data
 
         private string SerializeEntity(string entity) => entity.ToString();
 
-        private string SerializeEntities(IEnumerable<string> entity) => Newtonsoft.Json.JsonConvert.SerializeObject(entity, JsonSerializerSettings);
+        private string SerializeEntities(IEnumerable<string> entity) 
+        {
+            string json = "[" + string.Join(", ", entity) + "]";
+            return json;
+            //Newtonsoft.Json.JsonConvert.SerializeObject(entity, JsonSerializerSettings);
+        }
 
         private string GetStandardItemUrl(string id) => $"{_databaseName}/{_collectionName}/{id}";
 

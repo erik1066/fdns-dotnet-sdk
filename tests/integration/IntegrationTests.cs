@@ -45,11 +45,15 @@ namespace Foundation.Sdk.IntegrationTests
         {
             var jsonFiles1 = GetFiles("crud");
             var jsonFiles2 = GetFiles("search");
+            var jsonFiles3 = GetFiles("collections");
+            var jsonFiles4 = GetFiles("aggregation");
             
             var jsonFiles = new List<FileInfo>();
 
             jsonFiles.AddRange(jsonFiles1.ToList());
             jsonFiles.AddRange(jsonFiles2.ToList());
+            jsonFiles.AddRange(jsonFiles3.ToList());
+            jsonFiles.AddRange(jsonFiles4.ToList());
 
             int passCount = 0;
             int failCount = 0;
@@ -403,9 +407,155 @@ namespace Foundation.Sdk.IntegrationTests
 
                             outcome = "PASS";
                         }
-                        else if (testType == "search")
+                        else if (testType == "get-all")
                         {
+                            JToken[] dataTokens = token["data"].ToArray();
+                            JToken[] actionTokens = token["expected"].ToArray();
 
+                            foreach (var service in _fixture.Services)
+                            {
+                                var deleteCollectionResult = service.DeleteCollectionAsync().Result;
+
+                                System.Threading.Thread.Sleep(50);
+
+                                foreach (var dataToken in dataTokens)
+                                {
+                                    var insertResult = service.InsertAsync(dataToken.ToString()).Result;
+                                    Assert.Equal(201, insertResult.Status);
+                                }
+
+                                foreach (var actionToken in actionTokens)
+                                {
+                                    var expectedStatus = actionToken["status"].ToString();
+                                    var expectedTitlesArray = actionToken["titles"].ToArray();
+                                    var expectedTitles = new List<string>();
+
+                                    foreach(var titleToken in expectedTitlesArray)
+                                    {
+                                        var jvalue = ((JValue)titleToken); 
+                                        var title = jvalue.Value.ToString();
+                                        expectedTitles.Add(title);
+                                    }
+
+                                    var getAllResult = service.GetAllAsync().Result;
+
+                                    Assert.Equal(expectedStatus, getAllResult.Status.ToString());
+
+                                    var foundItems = getAllResult.Value.ToList();
+
+                                    foreach (var foundItem in foundItems)
+                                    {
+                                        JObject foundObject = JObject.Parse(foundItem);
+                                        string foundItemTitle = foundObject["title"].ToString();
+                                        Assert.Contains(foundItemTitle, expectedTitles);
+                                    }
+
+                                    Assert.Equal(expectedTitles.Count, foundItems.Count);
+                                }
+                            }
+
+                            outcome = "PASS";
+                        }
+                        else if (testType == "insert-many")
+                        {
+                            JToken[] dataTokens = token["data"].ToArray();
+                            JToken actionToken = token["expected"];
+
+                            foreach (var service in _fixture.Services)
+                            {
+                                var deleteCollectionResult = service.DeleteCollectionAsync().Result;
+
+                                System.Threading.Thread.Sleep(50);
+
+                                List<string> itemsToBulkInsert = new List<string>(12);
+
+                                foreach (var dataToken in dataTokens)
+                                {
+                                    var item = dataToken.ToString();
+                                    itemsToBulkInsert.Add(item);
+                                }
+
+                                var insertManyResult = service.InsertManyAsync(itemsToBulkInsert).Result;
+                                Assert.Equal(201, insertManyResult.Status);
+                                
+                                var expectedStatus = actionToken["status"].ToString();
+                                var expectedTitlesArray = actionToken["titles"].ToArray();
+                                var expectedTitles = new List<string>();
+
+                                foreach(var titleToken in expectedTitlesArray)
+                                {
+                                    var jvalue = ((JValue)titleToken); 
+                                    var title = jvalue.Value.ToString();
+                                    expectedTitles.Add(title);
+                                }
+
+                                var getAllResult = service.GetAllAsync().Result;
+
+                                Assert.Equal(expectedStatus, getAllResult.Status.ToString());
+
+                                var foundItems = getAllResult.Value.ToList();
+
+                                foreach (var foundItem in foundItems)
+                                {
+                                    JObject foundObject = JObject.Parse(foundItem);
+                                    string foundItemTitle = foundObject["title"].ToString();
+                                    Assert.Contains(foundItemTitle, expectedTitles);
+                                }
+
+                                Assert.Equal(expectedTitles.Count, foundItems.Count);                                
+                            }
+
+                            outcome = "PASS";
+                        }
+                        else if (testType == "aggregate")
+                        {
+                            JToken[] dataTokens = token["data"].ToArray();
+                            JToken actionToken = token["expected"];
+
+                            foreach (var service in _fixture.Services)
+                            {
+                                var deleteCollectionResult = service.DeleteCollectionAsync().Result;
+
+                                System.Threading.Thread.Sleep(50);
+
+                                List<string> itemsToBulkInsert = new List<string>(12);
+                                foreach (var dataToken in dataTokens)
+                                {
+                                    var item = dataToken.ToString();
+                                    itemsToBulkInsert.Add(item);
+                                }
+                                var insertManyResult = service.InsertManyAsync(itemsToBulkInsert).Result;
+                                Assert.Equal(201, insertManyResult.Status);
+                                
+                                var expectedStatus = actionToken["status"].ToString();
+                                var aggregateExpression = actionToken["expression"].ToString();
+                                var expectedPropertyName = actionToken["property"].ToString();
+                                var expectedValues = new List<string>();
+                                var expectedValuesArray = actionToken["values"].ToArray();
+
+                                foreach(var valueToken in expectedValuesArray)
+                                {
+                                    var jvalue = ((JValue)valueToken); 
+                                    var value = jvalue.Value.ToString();
+                                    expectedValues.Add(value);
+                                }
+
+                                var aggregateResult = service.AggregateAsync(aggregateExpression).Result;
+
+                                Assert.Equal(expectedStatus, aggregateResult.Status.ToString());
+
+                                JArray aggregateArray = JArray.Parse(aggregateResult.Value);
+                                int i = 0;
+                                foreach (var aggregateToken in aggregateArray)
+                                {
+                                    var propertyValue = aggregateToken[expectedPropertyName].ToString();
+                                    var expectedPropertyValue = expectedValues[i];
+                                    Assert.Equal(expectedPropertyValue, propertyValue);
+                                    i++;
+                                }
+                            }
+
+                            outcome = "PASS";
                         }
                     }
                     catch (Exception ex)
