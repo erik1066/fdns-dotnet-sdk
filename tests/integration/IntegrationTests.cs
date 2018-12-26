@@ -489,14 +489,23 @@ namespace Foundation.Sdk.IntegrationTests
                                 Assert.Equal(201, insertManyResult.Status);
                                 
                                 var expectedStatus = actionToken["status"].ToString();
-                                var expectedTitlesArray = actionToken["titles"].ToArray();
+                                JToken[] expectedTitlesArray = actionToken["titles"].ToArray();
+                                JToken[] expectedIdsArray = actionToken["ids"] != null ? actionToken["ids"].ToArray() : new JToken[0];
                                 var expectedTitles = new List<string>();
+                                var expectedIds = new List<string>();
 
-                                foreach(var titleToken in expectedTitlesArray)
+                                foreach (var titleToken in expectedTitlesArray)
                                 {
                                     var jvalue = ((JValue)titleToken); 
                                     var title = jvalue.Value.ToString();
                                     expectedTitles.Add(title);
+                                }
+
+                                foreach (var idToken in expectedIdsArray)
+                                {
+                                    var jvalue = ((JValue)idToken); 
+                                    var idString = jvalue.Value.ToString();
+                                    expectedIds.Add(idString);
                                 }
 
                                 var getAllResult = service.GetAllAsync().Result;
@@ -509,7 +518,13 @@ namespace Foundation.Sdk.IntegrationTests
                                 {
                                     JObject foundObject = JObject.Parse(foundItem);
                                     string foundItemTitle = foundObject["title"].ToString();
+                                    string foundItemId = foundObject["_id"].ToString();
                                     Assert.Contains(foundItemTitle, expectedTitles);
+
+                                    if (expectedIds.Count > 0)
+                                    {
+                                        Assert.Contains(foundItemId, expectedIds);                                        
+                                    }
                                 }
 
                                 Assert.Equal(expectedTitles.Count, foundItems.Count);                                
