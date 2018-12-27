@@ -31,20 +31,14 @@ namespace Foundation.Sdk.Data
         private static readonly JsonWriterSettings _jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict };
         private readonly ILogger<MongoService> _logger;
         private const string ID_PROPERTY_NAME = "_id";
-        private readonly IMongoDatabase _database;
-        private readonly IMongoCollection<BsonDocument> _collection;
-        private readonly string _databaseName = string.Empty;
-        private readonly string _collectionName = string.Empty;
         private readonly string _serviceName = string.Empty;
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="client">MongoDB client</param>
-        /// <param name="databaseName">Name of the database to use</param>
-        /// <param name="collectionName">Name of the collection to use</param>
         /// <param name="logger">Logger</param>
-        public MongoService(IMongoClient client, string databaseName, string collectionName, ILogger<MongoService> logger)
+        public MongoService(IMongoClient client, ILogger<MongoService> logger)
         {
             if (logger == null)
             {
@@ -57,33 +51,38 @@ namespace Foundation.Sdk.Data
 
             _client = client;
             _logger = logger;
-            _databaseName = databaseName;
-            _collectionName = collectionName;
-            _database = GetDatabase(_databaseName);
-            _collection = GetCollection(_database, _collectionName);
             _serviceName = this.GetType().Name;
         }
 
         /// <summary>
         /// Gets a single object
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="id">The id of the object to get</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>The object matching the specified id</returns>
-        public async Task<ServiceResult<string>> GetAsync(object id, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> GetAsync(string databaseName, string collectionName, object id, Dictionary<string, string> headers = null)
         {
             try
-            {   
+            {
+                var database = GetDatabase(databaseName);
+                var collection = GetCollection(database, collectionName);
                 (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());
                 BsonDocument findDocument = isObjectId == true ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
-                var json = StringifyDocument(await _collection.Find(findDocument).FirstOrDefaultAsync());
+                var json = StringifyDocument(await collection.Find(findDocument).FirstOrDefaultAsync());
 
-                var result = new ServiceResult<string>(value: json, status: json == null ? 404 : 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
+                var result = new ServiceResult<string>(
+                    value: json, 
+                    status: json == null ? 404 : 200, 
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    servicename: _serviceName);
+
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{_serviceName}: Get failed on {_databaseName}/{_collectionName}/{id}");
+                _logger.LogError(ex, $"{_serviceName}: Get failed on {databaseName}/{collectionName}/{id}");
                 throw;
             }
         }
@@ -91,33 +90,43 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Gets all objects in a collection
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>All objects in the collection</returns>
-        public async Task<ServiceResult<IEnumerable<string>>> GetAllAsync(Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<IEnumerable<string>>> GetAllAsync(string databaseName, string collectionName, Dictionary<string, string> headers = null)
         {
             try
             {
-                if (await DoesCollectionExist() == false) 
+                var database = GetDatabase(databaseName);
+                var collection = GetCollection(database, collectionName);
+
+                if (await DoesCollectionExist(databaseName, collectionName) == false) 
                 {
-                    _logger.LogInformation($"{_serviceName}: Get all failed on {_database}/{_collection}: The collection does not exist");
-                    var notFoundResult = GetNotFoundResult(correlationId: Common.GetCorrelationIdFromHeaders(headers), message: $"Collection '{_collectionName}' does not exist in database '{_databaseName}'");
+                    _logger.LogInformation($"{_serviceName}: Get all failed on {databaseName}/{collectionName}: The collection does not exist");
+                    var notFoundResult = GetNotFoundResult(correlationId: Common.GetCorrelationIdFromHeaders(headers), message: $"Collection '{collectionName}' does not exist in database '{databaseName}'");
                     var copiedResult = ServiceResult<IEnumerable<string>>.CreateNewUsingDetailsFrom<string>(null, notFoundResult);
                     return copiedResult;
                 }
 
-                var documents = await _collection.Find(_ => true).ToListAsync();
+                var documents = await collection.Find(_ => true).ToListAsync();
                 var items = new List<string>();
                 foreach (var document in documents)
                 {
                     items.Add(document.ToJson(_jsonWriterSettings));
                 }
 
-                var result = new ServiceResult<IEnumerable<string>>(value: items, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
+                var result = new ServiceResult<IEnumerable<string>>(
+                    value: items, 
+                    status: 200, 
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    servicename: _serviceName);
+
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{_serviceName}: Get all failed on {_database}/{_collection}");
+                _logger.LogError(ex, $"{_serviceName}: Get all failed on {databaseName}/{collectionName}");
                 throw;
             }
         }
@@ -125,19 +134,23 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Inserts a single object into the given database and collection. An ID is auto-generated for the object.
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="entity">The entity to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>The object that was inserted</returns>
-        public async Task<ServiceResult<string>> InsertAsync(string entity, Dictionary<string, string> headers = null) => await InsertAsync(id: null, entity: entity, headers: headers);
+        public async Task<ServiceResult<string>> InsertAsync(string databaseName, string collectionName, string entity, Dictionary<string, string> headers = null) => await InsertAsync(databaseName: databaseName, collectionName: collectionName, id: null, entity: entity, headers: headers);
 
         /// <summary>
         /// Inserts a single object into the given database and collection
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="id">The id of the object</param>
         /// <param name="entity">The entity to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>The object that was inserted</returns>
-        public async Task<ServiceResult<string>> InsertAsync(object id, string entity, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> InsertAsync(string databaseName, string collectionName, object id, string entity, Dictionary<string, string> headers = null)
         {
             if (id is ObjectId && (ObjectId)id == ObjectId.Empty)
             {
@@ -146,6 +159,9 @@ namespace Foundation.Sdk.Data
 
             try
             {
+                var database = GetDatabase(databaseName);
+                var collection = GetCollection(database, collectionName);
+
                 var document = BsonDocument.Parse(entity);
 
                 if (document.Contains("_id") && document["_id"].GetType() != typeof(BsonObjectId) && document["_id"].GetType() != typeof(BsonString))
@@ -166,9 +182,9 @@ namespace Foundation.Sdk.Data
                     }
                 }
                 
-                await _collection.InsertOneAsync(document);
+                await collection.InsertOneAsync(document);
                 id = document.GetValue("_id");
-                var result = await GetAsync(id, headers);
+                var result = await GetAsync(databaseName, collectionName, id, headers);
                 if (result.IsSuccess)
                 {
                     result.Status = (int)HttpStatusCode.Created;
@@ -189,7 +205,7 @@ namespace Foundation.Sdk.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{_serviceName}: Insert failed on {_database}/{_collection}/{id}");
+                _logger.LogError(ex, $"{_serviceName}: Insert failed on {databaseName}/{collectionName}/{id}");
                 throw;
             }
         }
@@ -197,22 +213,26 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Updates a single object in the given database and collection
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="id">The id of the object</param>
         /// <param name="entity">The entity</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>The object that was updated</returns>
-        public async Task<ServiceResult<string>> ReplaceAsync(object id, string entity, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> ReplaceAsync(string databaseName, string collectionName, object id, string entity, Dictionary<string, string> headers = null)
         {
             try
             {
+                var database = GetDatabase(databaseName);
+                var collection = GetCollection(database, collectionName);
                 var document = BsonDocument.Parse(entity);
                 (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());
                 BsonDocument findDocument = isObjectId == true ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
-                var replaceOneResult = await _collection.ReplaceOneAsync(findDocument, document);
+                var replaceOneResult = await collection.ReplaceOneAsync(findDocument, document);
 
                 if (replaceOneResult.IsAcknowledged && replaceOneResult.ModifiedCount == 1)
                 {
-                    return await GetAsync(id, headers);
+                    return await GetAsync(databaseName, collectionName, id, headers);
                 }
                 else if (replaceOneResult.IsAcknowledged && replaceOneResult.ModifiedCount == 0)
                 {
@@ -229,7 +249,7 @@ namespace Foundation.Sdk.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{_serviceName}: Replace failed on {_database}/{_collection}/{id}");
+                _logger.LogError(ex, $"{_serviceName}: Replace failed on {databaseName}/{collectionName}/{id}");
                 throw;
             }
         }
@@ -237,24 +257,34 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Deletes a single object in the given database and collection
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="id">The id of the object</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>Whether the deletion was successful</returns>
-        public async Task<ServiceResult<int>> DeleteAsync(object id, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<int>> DeleteAsync(string databaseName, string collectionName, object id, Dictionary<string, string> headers = null)
         {
             try
             {
+                var database = GetDatabase(databaseName);
+                var collection = GetCollection(database, collectionName);
                 (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());                
                 BsonDocument findDocument = isObjectId == true ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
-                var deleteOneResult = await _collection.DeleteOneAsync(findDocument);
+                var deleteOneResult = await collection.DeleteOneAsync(findDocument);
 
                 if (deleteOneResult.IsAcknowledged && deleteOneResult.DeletedCount == 1)
                 {
-                    return new ServiceResult<int>(value: (int)deleteOneResult.DeletedCount, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers));
+                    return new ServiceResult<int>(
+                        value: (int)deleteOneResult.DeletedCount, 
+                        status: 200, 
+                        correlationId: Common.GetCorrelationIdFromHeaders(headers));
                 }
                 else if (deleteOneResult.IsAcknowledged && deleteOneResult.DeletedCount == 0)
                 {
-                    return new ServiceResult<int>(value: 0, status: 404, correlationId: Common.GetCorrelationIdFromHeaders(headers));
+                    return new ServiceResult<int>(
+                        value: 0, 
+                        status: 404, 
+                        correlationId: Common.GetCorrelationIdFromHeaders(headers));
                 }
                 else
                 {
@@ -263,7 +293,7 @@ namespace Foundation.Sdk.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{_serviceName}: Delete failed on {_database}/{_collection}/{id}");
+                _logger.LogError(ex, $"{_serviceName}: Delete failed on {databaseName}/{collectionName}/{id}");
                 throw;
             }
         }
@@ -271,18 +301,31 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Finds a set of objects that match the specified find criteria
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="findExpression">The MongoDB-style find syntax</param>
         /// <param name="start">The index within the find results at which to start filtering</param>
-        /// <param name="size">The number of items within the find results to limit the result set to</param>
+        /// <param name="limit">The number of items within the find results to limit the result set to</param>
         /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the find criteria</returns>
-        public async Task<ServiceResult<SearchResults<string>>> FindAsync(string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults<string>>> FindAsync(string databaseName, string collectionName, string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             try
             {
-                var regexFind = GetRegularExpressionQuery(findExpression, start, limit, sortFieldName, sortDirection);
+                var database = GetDatabase(databaseName);
+                var collection = GetCollection(database, collectionName);
+
+                var regexFind = GetRegularExpressionQuery(
+                    database: database, 
+                    collection: collection, 
+                    findExpression: findExpression, 
+                    start: start, 
+                    limit: limit, 
+                    sortFieldName: sortFieldName, 
+                    sortDirection: sortDirection);
+
                 var document = await regexFind.ToListAsync();
                 var jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict, Indent = false, NewLineChars = string.Empty };
                 var json = document.ToJson(jsonWriterSettings);
@@ -302,12 +345,17 @@ namespace Foundation.Sdk.Data
                     Total = items.Count
                 };
 
-                var result = new ServiceResult<SearchResults<string>>(value: searchResults, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
+                var result = new ServiceResult<SearchResults<string>>(
+                    value: searchResults, 
+                    status: 200, 
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    servicename: _serviceName);
+
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{_serviceName}: Find failed on {_database}/{_collection} with arguments start={start}, limit={limit}, sortFieldName={sortFieldName}");
+                _logger.LogError(ex, $"{_serviceName}: Find failed on {databaseName}/{collectionName} with arguments start={start}, limit={limit}, sortFieldName={sortFieldName}");
                 throw;
             }
         }
@@ -316,45 +364,73 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Searches for a set of objects that match the specified query syntax
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="searchExpression">The Google-like query syntax</param>
         /// <param name="start">The index within the find results at which to start filtering</param>
-        /// <param name="size">The number of items within the find results to limit the result set to</param>
+        /// <param name="limit">The number of items within the find results to limit the result set to</param>
         /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the search criteria</returns>
-        public async Task<ServiceResult<SearchResults<string>>> SearchAsync(string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults<string>>> SearchAsync(string databaseName, string collectionName, string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
+            var database = GetDatabase(databaseName);
+            var collection = GetCollection(database, collectionName);
+
             string convertedExpression = SearchStringConverter.BuildQuery(searchExpression);
-            return await FindAsync(findExpression: convertedExpression, start: start, limit: limit, sortFieldName: sortFieldName, sortDirection: sortDirection, headers: headers);
+            return await FindAsync(
+                databaseName: databaseName, 
+                collectionName: collectionName, 
+                findExpression: convertedExpression, 
+                start: start, 
+                limit: limit, 
+                sortFieldName: sortFieldName, 
+                sortDirection: sortDirection, 
+                headers: headers);
         }
 
         /// <summary>
         /// Deletes a collection
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>Whether the deletion was successful</returns>
-        public async Task<ServiceResult<int>> DeleteCollectionAsync(Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<int>> DeleteCollectionAsync(string databaseName, string collectionName, Dictionary<string, string> headers = null)
         {
-            bool collectionExists = await DoesCollectionExist();
+            var database = GetDatabase(databaseName);
+            var collection = GetCollection(database, collectionName);
+
+            bool collectionExists = await DoesCollectionExist(databaseName, collectionName);
 
             if (collectionExists) 
             {
-                await _database.DropCollectionAsync(_collectionName);
-                return new ServiceResult<int>(value: 1, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
+                await database.DropCollectionAsync(collectionName);
+                return new ServiceResult<int>(
+                    value: 1, 
+                    status: 200, 
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    servicename: _serviceName);
             }
             else
             {
-                return new ServiceResult<int>(value: 0, status: 404, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
+                return new ServiceResult<int>(
+                    value: 0, 
+                    status: 404, 
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    servicename: _serviceName);
             }
         }
 
         /// <summary>
         /// Inserts multiple objects and auto-generates their ids
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="entities">The entities to be inserted</param>
         /// <returns>List of ids that were generated for the inserted objects</returns>
-        public async Task<ServiceResult<IEnumerable<string>>> InsertManyAsync(IEnumerable<string> entities, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<IEnumerable<string>>> InsertManyAsync(string databaseName, string collectionName, IEnumerable<string> entities, Dictionary<string, string> headers = null)
         {
             var jsonArray = SerializeEntities(entities);
             var documents = new List<BsonDocument>();
@@ -366,8 +442,11 @@ namespace Foundation.Sdk.Data
                 BsonDocument document = BsonDocument.Parse(json);
                 documents.Add(document);
             }
+
+            var database = GetDatabase(databaseName);
+            var collection = GetCollection(database, collectionName);
             
-            await _collection.InsertManyAsync(documents);
+            await collection.InsertManyAsync(documents);
 
             List<string> ids = new List<string>();
             foreach (var document in documents)
@@ -375,26 +454,38 @@ namespace Foundation.Sdk.Data
                 ids.Add(document.GetValue("_id").ToString());
             }
 
-            return new ServiceResult<IEnumerable<string>>(value: ids, status: (int)HttpStatusCode.Created, correlationId: Common.GetCorrelationIdFromHeaders(headers));
+            return new ServiceResult<IEnumerable<string>>(
+                value: ids, 
+                status: (int)HttpStatusCode.Created, 
+                correlationId: 
+                Common.GetCorrelationIdFromHeaders(headers));
         }
 
         /// <summary>
         /// Counts the number of objects that match the specified count criteria
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="findExpression">The MongoDB-style find syntax</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>Number of matching objects</returns>
-        public async Task<ServiceResult<long>> CountAsync(string findExpression, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<long>> CountAsync(string databaseName, string collectionName, string findExpression, Dictionary<string, string> headers = null)
         {
             try
             {
-                var regexFind = GetRegularExpressionQuery(findExpression, 0, Int32.MaxValue, string.Empty, ListSortDirection.Ascending);
+                var database = GetDatabase(databaseName);
+                var collection = GetCollection(database, collectionName);
+
+                var regexFind = GetRegularExpressionQuery(database, collection, findExpression, 0, Int32.MaxValue, string.Empty, ListSortDirection.Ascending);
                 var documentCount = await regexFind.CountDocumentsAsync();
-                return new ServiceResult<long>(value: documentCount, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers));
+                return new ServiceResult<long>(
+                    value: documentCount, 
+                    status: 200, 
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{_serviceName}: Count failed on {_databaseName}/{_collectionName}");
+                _logger.LogError(ex, $"{_serviceName}: Count failed on {databaseName}/{collectionName}");
                 throw;
             }
         }
@@ -402,25 +493,34 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Gets a list of distinct values for a given field
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="fieldName">The field name</param>
         /// <param name="findExpression">The MongoDB-style find syntax</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>List of distinct values</returns>
-        public async Task<ServiceResult<List<string>>> GetDistinctAsync(string fieldName, string findExpression, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<List<string>>> GetDistinctAsync(string databaseName, string collectionName, string fieldName, string findExpression, Dictionary<string, string> headers = null)
         {
             try
             {
+                var database = GetDatabase(databaseName);
+                var collection = GetCollection(database, collectionName);
+
                 BsonDocument bsonDocument = BsonDocument.Parse(findExpression);
                 FilterDefinition<BsonDocument> filterDefinition = bsonDocument;
 
-                var distinctResults = await _collection.DistinctAsync<string>(fieldName, filterDefinition, null);
+                var distinctResults = await collection.DistinctAsync<string>(fieldName, filterDefinition, null);
                 
                 var items = distinctResults.ToList();
-                return new ServiceResult<List<string>>(value: items, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
+                return new ServiceResult<List<string>>(
+                    value: items, 
+                    status: 200, 
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    servicename: _serviceName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{_serviceName}: Distinct failed on {_databaseName}/{_collectionName}/distinct/{fieldName}");
+                _logger.LogError(ex, $"{_serviceName}: Distinct failed on {databaseName}/{collectionName}/distinct/{fieldName}");
                 throw;
             }
         }
@@ -428,10 +528,12 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Aggregates data via an aggregation pipeline and returns an array of objects
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="aggregationExpression">The MongoDB-style aggregation expression; see https://docs.mongodb.com/manual/aggregation/</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>List of matching and/or transformed objects</returns>
-        public async Task<ServiceResult<string>> AggregateAsync(string aggregationExpression, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> AggregateAsync(string databaseName, string collectionName, string aggregationExpression, Dictionary<string, string> headers = null)
         {
             var pipeline = new List<BsonDocument>();
 
@@ -442,9 +544,16 @@ namespace Foundation.Sdk.Data
                 pipeline.Add(document);
             }
 
-            var result = (await _collection.AggregateAsync<BsonDocument> (pipeline)).ToList();
+            var database = GetDatabase(databaseName);
+            var collection = GetCollection(database, collectionName);
+
+            var result = (await collection.AggregateAsync<BsonDocument> (pipeline)).ToList();
             var stringifiedDocument = result.ToJson(_jsonWriterSettings);
-            return new ServiceResult<string>(value: stringifiedDocument, status: 200, correlationId: Common.GetCorrelationIdFromHeaders(headers), servicename: _serviceName);
+            return new ServiceResult<string>(
+                value: stringifiedDocument, 
+                status: 200, 
+                correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                servicename: _serviceName);
         }
 
         #region Private helper methods
@@ -498,10 +607,13 @@ namespace Foundation.Sdk.Data
             return objects;
         }
 
-        private async Task<bool> DoesCollectionExist()
+        private async Task<bool> DoesCollectionExist(string databaseName, string collectionName)
         {
-            var filter = new BsonDocument("name", _collectionName);
-            var collectionCursor = await _database.ListCollectionsAsync(new ListCollectionsOptions {Filter = filter});
+            var database = GetDatabase(databaseName);
+            var collection = GetCollection(database, collectionName);
+
+            var filter = new BsonDocument("name", collectionName);
+            var collectionCursor = await database.ListCollectionsAsync(new ListCollectionsOptions {Filter = filter});
             var exists = await collectionCursor.AnyAsync();
             return exists;
         }
@@ -535,18 +647,25 @@ namespace Foundation.Sdk.Data
             return (isObjectId, objectId);
         }
 
-        private IFindFluent<BsonDocument, BsonDocument> GetRegularExpressionQuery(string findExpression, int start, int size, string sortFieldName, ListSortDirection sortDirection)
+        private IFindFluent<BsonDocument, BsonDocument> GetRegularExpressionQuery(
+            IMongoDatabase database, 
+            IMongoCollection<MongoDB.Bson.BsonDocument> collection, 
+            string findExpression, 
+            int start, 
+            int limit, 
+            string sortFieldName, 
+            ListSortDirection sortDirection)
         {
-            if (size <= -1)
+            if (limit <= -1)
             {
-                size = Int32.MaxValue;
+                limit = Int32.MaxValue;
             }
 
             BsonDocument bsonDocument = BsonDocument.Parse(findExpression);
-            var regexFind = _collection
+            var regexFind = collection
                 .Find(bsonDocument)
                 .Skip(start)
-                .Limit(size);
+                .Limit(limit);
 
             if (!string.IsNullOrEmpty(sortFieldName))
             {

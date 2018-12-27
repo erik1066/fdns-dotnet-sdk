@@ -17,9 +17,32 @@ using Newtonsoft.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
+using static Foundation.Sdk.IntegrationTests.CommonTest;
+
 namespace Foundation.Sdk.IntegrationTests
 {
     // TODO: Add xunit attribute to load the Json test data the right way, like with a [JsonData] attribute on the test methods
+
+    public static class CommonTest
+    {
+        public const string DB_NAME = "bookstore";
+
+        public static string GetCollectionName(IObjectService service)
+        {
+            if (service is HttpObjectService)
+            {
+                return "bookshttpservice";
+            }
+            else if (service is MongoService)
+            {
+                return "booksmongoservice";                
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+    }
 
     public class ObjectServiceIntegrationTests : IClassFixture<ObjectIntegrationFixture>
     {
@@ -88,11 +111,11 @@ namespace Foundation.Sdk.IntegrationTests
                             {
                                 if (token["data"] != null)
                                 {
-                                    var insertResult = service.InsertAsync(id, data).Result;
+                                    var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), id, data).Result;
                                     Assert.Equal(201, insertResult.Status);
                                 }
 
-                                var retrievalResult = service.GetAsync(id).Result;
+                                var retrievalResult = service.GetAsync(DB_NAME, GetCollectionName(service), id).Result;
                                 Assert.Equal(status, retrievalResult.Status);
 
                                 if (token["data"] != null)
@@ -116,14 +139,14 @@ namespace Foundation.Sdk.IntegrationTests
 
                                 if (token["data"] != null)
                                 {
-                                    var insertResult = service.InsertAsync(data).Result;
+                                    var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), data).Result;
                                     Assert.Equal(201, insertResult.Status);
 
                                     JObject insertedObject = JObject.Parse(insertResult.Value);
                                     id = insertedObject["_id"]["$oid"].ToString();
                                 }
 
-                                var retrievalResult = service.GetAsync(id).Result;
+                                var retrievalResult = service.GetAsync(DB_NAME, GetCollectionName(service), id).Result;
                                 Assert.Equal(status, retrievalResult.Status);
 
                                 if (token["data"] != null)
@@ -146,7 +169,7 @@ namespace Foundation.Sdk.IntegrationTests
                             {
                                 if (token["data"] != null)
                                 {
-                                    var insertResult = service.InsertAsync(id, data).Result;
+                                    var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), id, data).Result;
                                     Assert.Equal(status, insertResult.Status);
                                 }
                                 outcome = "PASS";
@@ -165,7 +188,7 @@ namespace Foundation.Sdk.IntegrationTests
 
                                 if (token["data"] != null)
                                 {
-                                    var insertResult = service.InsertAsync(data).Result;
+                                    var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), data).Result;
                                     Assert.Equal(status, insertResult.Status);
 
                                     if (insertResult.IsSuccess)
@@ -183,7 +206,7 @@ namespace Foundation.Sdk.IntegrationTests
                                             id = insertedObject["_id"].ToString();                                            
                                         }
 
-                                        var retrievalResult = service.GetAsync(id).Result;
+                                        var retrievalResult = service.GetAsync(DB_NAME, GetCollectionName(service), id).Result;
                                         Assert.Equal(200, retrievalResult.Status);
 
                                         if (token["data"] != null)
@@ -207,10 +230,10 @@ namespace Foundation.Sdk.IntegrationTests
 
                             foreach (var service in _fixture.Services)
                             {
-                                var insertResult = service.InsertAsync(id, dataTokens[0].ToString()).Result;
+                                var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), id, dataTokens[0].ToString()).Result;
                                 Assert.Equal(201, insertResult.Status);
 
-                                var replaceResult = service.ReplaceAsync(id, dataTokens[1].ToString()).Result;
+                                var replaceResult = service.ReplaceAsync(DB_NAME, GetCollectionName(service), id, dataTokens[1].ToString()).Result;
                                 Assert.Equal(status, replaceResult.Status);
                             }
 
@@ -226,7 +249,7 @@ namespace Foundation.Sdk.IntegrationTests
 
                             foreach (var service in _fixture.Services)
                             {
-                                var replaceResult = service.ReplaceAsync(id, data.ToString()).Result;
+                                var replaceResult = service.ReplaceAsync(DB_NAME, GetCollectionName(service), id, data.ToString()).Result;
                                 Assert.Equal(status, replaceResult.Status);
                             }
 
@@ -242,10 +265,10 @@ namespace Foundation.Sdk.IntegrationTests
 
                             foreach (var service in _fixture.Services)
                             {
-                                var insertResult1 = service.InsertAsync(string.IsNullOrEmpty(id) ? null : id, data.ToString()).Result;
+                                var insertResult1 = service.InsertAsync(DB_NAME, GetCollectionName(service), string.IsNullOrEmpty(id) ? null : id, data.ToString()).Result;
                                 Assert.Equal(201, insertResult1.Status);
 
-                                var insertResult2 = service.InsertAsync(string.IsNullOrEmpty(id) ? null : id, data.ToString()).Result;
+                                var insertResult2 = service.InsertAsync(DB_NAME, GetCollectionName(service), string.IsNullOrEmpty(id) ? null : id, data.ToString()).Result;
                                 Assert.Equal(expectedStatus, insertResult2.Status);
                             }
 
@@ -262,10 +285,10 @@ namespace Foundation.Sdk.IntegrationTests
                             {
                                 if (token["data"] != null)
                                 {
-                                    var insertResult = service.InsertAsync(id, data).Result;
+                                    var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), id, data).Result;
                                     Assert.Equal(201, insertResult.Status);
 
-                                    var deleteResult = service.DeleteAsync(id).Result;
+                                    var deleteResult = service.DeleteAsync(DB_NAME, GetCollectionName(service), id).Result;
                                     Assert.Equal(expectedStatus, deleteResult.Status);
                                 }
                                 outcome = "PASS";
@@ -281,13 +304,13 @@ namespace Foundation.Sdk.IntegrationTests
                             {
                                 if (token["data"] != null)
                                 {
-                                    var insertResult = service.InsertAsync(data).Result;
+                                    var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), data).Result;
                                     Assert.Equal(201, insertResult.Status);
 
                                     JObject obj = JObject.Parse(insertResult.Value);
                                     string id = obj["_id"]["$oid"].ToString();
 
-                                    var deleteResult = service.DeleteAsync(id).Result;
+                                    var deleteResult = service.DeleteAsync(DB_NAME, GetCollectionName(service), id).Result;
                                     Assert.Equal(expectedStatus, deleteResult.Status);
                                 }
                                 outcome = "PASS";
@@ -302,7 +325,7 @@ namespace Foundation.Sdk.IntegrationTests
                                 var firstData = dataTokens[0].ToString();
                                 var secondData = dataTokens[1].ToString();
 
-                                var insertResult = service.InsertAsync(firstData).Result;
+                                var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), firstData).Result;
                                 Assert.Equal(201, insertResult.Status);
 
                                 JObject obj = JObject.Parse(insertResult.Value);
@@ -310,19 +333,19 @@ namespace Foundation.Sdk.IntegrationTests
                                 
                                 string insertedValue = insertResult.Value;
 
-                                var getResult1 = service.GetAsync(id).Result;
+                                var getResult1 = service.GetAsync(DB_NAME, GetCollectionName(service), id).Result;
                                 Assert.Equal(200, getResult1.Status);
                                 Assert.Equal(insertedValue, getResult1.Value);
 
-                                var replaceResult = service.ReplaceAsync(id, secondData).Result;
+                                var replaceResult = service.ReplaceAsync(DB_NAME, GetCollectionName(service), id, secondData).Result;
                                 Assert.Equal(200, replaceResult.Status);
 
                                 Assert.NotEqual(insertedValue, replaceResult.Value);
 
-                                var deleteResult = service.DeleteAsync(id).Result;
+                                var deleteResult = service.DeleteAsync(DB_NAME, GetCollectionName(service), id).Result;
                                 Assert.Equal(200, deleteResult.Status);
 
-                                var getResult2 = service.GetAsync(id).Result;
+                                var getResult2 = service.GetAsync(DB_NAME, GetCollectionName(service), id).Result;
                                 Assert.Equal(404, getResult2.Status);
 
                                 outcome = "PASS";
@@ -339,25 +362,25 @@ namespace Foundation.Sdk.IntegrationTests
                                 var firstData = dataTokens[0].ToString();
                                 var secondData = dataTokens[1].ToString();
 
-                                var insertResult = service.InsertAsync(id, firstData).Result;
+                                var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), id, firstData).Result;
                                 Assert.Equal(201, insertResult.Status);
                                 
                                 string insertedValue = insertResult.Value;
 
-                                var getResult1 = service.GetAsync(id).Result;
+                                var getResult1 = service.GetAsync(DB_NAME, GetCollectionName(service), id).Result;
                                 Assert.Equal(200, getResult1.Status);
                                 Assert.Equal(insertedValue, getResult1.Value);
 
-                                var replaceResult = service.ReplaceAsync(id, secondData).Result;
+                                var replaceResult = service.ReplaceAsync(DB_NAME, GetCollectionName(service), id, secondData).Result;
                                 Assert.Equal(200, replaceResult.Status);
 
                                 Assert.NotEqual(insertedValue, replaceResult.Value);
                                 Assert.Equal(expectedValue, replaceResult.Value);
 
-                                var deleteResult = service.DeleteAsync(id).Result;
+                                var deleteResult = service.DeleteAsync(DB_NAME, GetCollectionName(service), id).Result;
                                 Assert.Equal(200, deleteResult.Status);
 
-                                var getResult2 = service.GetAsync(id).Result;
+                                var getResult2 = service.GetAsync(DB_NAME, GetCollectionName(service), id).Result;
                                 Assert.Equal(404, getResult2.Status);
 
                                 outcome = "PASS";
@@ -370,13 +393,13 @@ namespace Foundation.Sdk.IntegrationTests
 
                             foreach (var service in _fixture.Services)
                             {
-                                var deleteCollectionResult = service.DeleteCollectionAsync().Result;
+                                var deleteCollectionResult = service.DeleteCollectionAsync(DB_NAME, GetCollectionName(service)).Result;
 
                                 System.Threading.Thread.Sleep(200);
 
                                 foreach (var dataToken in dataTokens)
                                 {
-                                    var insertResult = service.InsertAsync(dataToken.ToString()).Result;
+                                    var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), dataToken.ToString()).Result;
                                     Assert.Equal(201, insertResult.Status);
                                 }
 
@@ -397,8 +420,8 @@ namespace Foundation.Sdk.IntegrationTests
                                     }
 
                                     var findResult = testType == "find" ? 
-                                        service.FindAsync(expression, int.Parse(start), int.Parse(limit), "title", System.ComponentModel.ListSortDirection.Descending, null).Result :
-                                        service.SearchAsync(expression, int.Parse(start), int.Parse(limit), "title", System.ComponentModel.ListSortDirection.Descending, null).Result;
+                                        service.FindAsync(DB_NAME, GetCollectionName(service), expression, int.Parse(start), int.Parse(limit), "title", System.ComponentModel.ListSortDirection.Descending, null).Result :
+                                        service.SearchAsync(DB_NAME, GetCollectionName(service), expression, int.Parse(start), int.Parse(limit), "title", System.ComponentModel.ListSortDirection.Descending, null).Result;
 
                                     Assert.Equal(expectedStatus, findResult.Status.ToString());
 
@@ -424,13 +447,13 @@ namespace Foundation.Sdk.IntegrationTests
 
                             foreach (var service in _fixture.Services)
                             {
-                                var deleteCollectionResult = service.DeleteCollectionAsync().Result;
+                                var deleteCollectionResult = service.DeleteCollectionAsync(DB_NAME, GetCollectionName(service)).Result;
 
                                 System.Threading.Thread.Sleep(50);
 
                                 foreach (var dataToken in dataTokens)
                                 {
-                                    var insertResult = service.InsertAsync(dataToken.ToString()).Result;
+                                    var insertResult = service.InsertAsync(DB_NAME, GetCollectionName(service), dataToken.ToString()).Result;
                                     Assert.Equal(201, insertResult.Status);
                                 }
 
@@ -447,7 +470,7 @@ namespace Foundation.Sdk.IntegrationTests
                                         expectedTitles.Add(title);
                                     }
 
-                                    var getAllResult = service.GetAllAsync().Result;
+                                    var getAllResult = service.GetAllAsync(DB_NAME, GetCollectionName(service)).Result;
 
                                     Assert.Equal(expectedStatus, getAllResult.Status.ToString());
 
@@ -473,7 +496,7 @@ namespace Foundation.Sdk.IntegrationTests
 
                             foreach (var service in _fixture.Services)
                             {
-                                var deleteCollectionResult = service.DeleteCollectionAsync().Result;
+                                var deleteCollectionResult = service.DeleteCollectionAsync(DB_NAME, GetCollectionName(service)).Result;
 
                                 System.Threading.Thread.Sleep(50);
 
@@ -485,7 +508,7 @@ namespace Foundation.Sdk.IntegrationTests
                                     itemsToBulkInsert.Add(item);
                                 }
 
-                                var insertManyResult = service.InsertManyAsync(itemsToBulkInsert).Result;
+                                var insertManyResult = service.InsertManyAsync(DB_NAME, GetCollectionName(service), itemsToBulkInsert).Result;
                                 Assert.Equal(201, insertManyResult.Status);
                                 
                                 var expectedStatus = actionToken["status"].ToString();
@@ -508,7 +531,7 @@ namespace Foundation.Sdk.IntegrationTests
                                     expectedIds.Add(idString);
                                 }
 
-                                var getAllResult = service.GetAllAsync().Result;
+                                var getAllResult = service.GetAllAsync(DB_NAME, GetCollectionName(service)).Result;
 
                                 Assert.Equal(expectedStatus, getAllResult.Status.ToString());
 
@@ -539,7 +562,7 @@ namespace Foundation.Sdk.IntegrationTests
 
                             foreach (var service in _fixture.Services)
                             {
-                                var deleteCollectionResult = service.DeleteCollectionAsync().Result;
+                                var deleteCollectionResult = service.DeleteCollectionAsync(DB_NAME, GetCollectionName(service)).Result;
 
                                 System.Threading.Thread.Sleep(50);
 
@@ -549,7 +572,7 @@ namespace Foundation.Sdk.IntegrationTests
                                     var item = dataToken.ToString();
                                     itemsToBulkInsert.Add(item);
                                 }
-                                var insertManyResult = service.InsertManyAsync(itemsToBulkInsert).Result;
+                                var insertManyResult = service.InsertManyAsync(DB_NAME, GetCollectionName(service), itemsToBulkInsert).Result;
                                 Assert.Equal(201, insertManyResult.Status);
                                 
                                 var expectedStatus = actionToken["status"].ToString();
@@ -565,7 +588,7 @@ namespace Foundation.Sdk.IntegrationTests
                                     expectedValues.Add(value);
                                 }
 
-                                var aggregateResult = service.AggregateAsync(aggregateExpression).Result;
+                                var aggregateResult = service.AggregateAsync(DB_NAME, GetCollectionName(service), aggregateExpression).Result;
 
                                 Assert.Equal(expectedStatus, aggregateResult.Status.ToString());
 
@@ -645,18 +668,15 @@ namespace Foundation.Sdk.IntegrationTests
             MongoBookLogger = new Mock<ILogger<MongoService>>().Object;
             HttpBookLogger = new Mock<ILogger<HttpObjectService>>().Object;
 
-            var guid1 = System.Guid.NewGuid().ToString().Replace("-", string.Empty);
-            var guid2 = System.Guid.NewGuid().ToString().Replace("-", string.Empty);
-
-            MongoBookService = new MongoService(MongoClient, "bookstore", "booksMongo" + guid1, MongoBookLogger);
-            HttpBookService = new HttpObjectService("unittests", "bookstore", "booksHttp" + guid2, ClientFactory, HttpBookLogger);
+            MongoBookService = new MongoService(MongoClient, MongoBookLogger);
+            HttpBookService = new HttpObjectService("unittests", ClientFactory, HttpBookLogger);
 
             Services.Add(MongoBookService);
             Services.Add(HttpBookService);
 
             foreach (var service in Services)
             {
-                service.DeleteCollectionAsync();
+                service.DeleteCollectionAsync(DB_NAME, GetCollectionName(service));
             }
         }
 
@@ -664,7 +684,7 @@ namespace Foundation.Sdk.IntegrationTests
         {
             foreach (var service in Services)
             {
-                service.DeleteCollectionAsync();
+                service.DeleteCollectionAsync(DB_NAME, GetCollectionName(service));
             }
 
             Client.Dispose();

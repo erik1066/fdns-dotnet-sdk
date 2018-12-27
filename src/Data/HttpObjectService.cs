@@ -15,7 +15,7 @@ using MongoDB.Bson;
 namespace Foundation.Sdk.Data
 {
     /// <summary>
-    /// Class for interacting with the FDNS Object microservice (see https://github.com/CDCgov/fdns-ms-object) over HTTP using strongly-typed objects
+    /// Class for interacting with the FDNS Object microservice (see https://github.com/CDCgov/fdns-ms-object) over HTTP
     /// </summary>
     public sealed class HttpObjectService : IObjectService
     {
@@ -25,8 +25,6 @@ namespace Foundation.Sdk.Data
         private readonly HttpClient _client = null;
         private readonly ILogger<HttpObjectService> _logger;
         private const string ID_PROPERTY_NAME = "_id";
-        private readonly string _databaseName = string.Empty;
-        private readonly string _collectionName = string.Empty;
 
         private string SendingServiceName { get; } = string.Empty;
         private JsonSerializerSettings JsonSerializerSettings { get; }
@@ -35,12 +33,10 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Constructor
         /// </summary>
+        /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
         /// <param name="clientFactory">The Http client factory to use for creating Http clients</param>
         /// <param name="logger">The logger to use</param>
-        /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
-        /// <param name="databaseName">Name of the database</param>
-        /// <param name="collectionName">Name of the collection within the database</param>
-        public HttpObjectService(string appName, string databaseName, string collectionName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger)
+        public HttpObjectService(string appName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger)
         {
             #region Input Validation
             if (clientFactory == null)
@@ -55,28 +51,10 @@ namespace Foundation.Sdk.Data
             {
                 throw new ArgumentNullException(nameof(appName));
             }
-            if (databaseName == null)
-            {
-                throw new ArgumentNullException(nameof(databaseName));
-            }
-            if (collectionName == null)
-            {
-                throw new ArgumentNullException(nameof(collectionName));
-            }
-            if (!string.IsNullOrEmpty(databaseName) && !_regexCollectionName.IsMatch(databaseName))
-            {
-                throw new ArgumentException(nameof(databaseName));
-            }
-            if (!string.IsNullOrEmpty(collectionName) && !_regexCollectionName.IsMatch(collectionName))
-            {
-                throw new ArgumentException(nameof(collectionName));
-            }
             #endregion // Input Validation
 
             _client = clientFactory.CreateClient($"{appName}-{Common.OBJECT_SERVICE_NAME}");
             _logger = logger;
-            _databaseName = databaseName;
-            _collectionName = collectionName;
             SendingServiceName = appName;
             JsonSerializerSettings = new JsonSerializerSettings() { Formatting = Formatting.None, NullValueHandling = NullValueHandling.Ignore, ContractResolver = new CamelCasePropertyNamesContractResolver() };
         }
@@ -84,13 +62,12 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Constructor
         /// </summary>
+        /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
         /// <param name="clientFactory">The Http client factory to use for creating Http clients</param>
         /// <param name="logger">The logger to use</param>
-        /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
-        /// <param name="routePrefix">Optional route parts to use</param>
         /// <param name="jsonSerializerSettings">Customer Json serializer</param>
-        public HttpObjectService(string appName, string databaseName, string collectionName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger, JsonSerializerSettings jsonSerializerSettings) 
-            : this(appName, databaseName, collectionName, clientFactory, logger)
+        public HttpObjectService(string appName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger, JsonSerializerSettings jsonSerializerSettings) 
+            : this(appName, clientFactory, logger)
         {
             JsonSerializerSettings = jsonSerializerSettings;
         }
@@ -98,12 +75,14 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Retrieves an object by id
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="id">The id of the object to retrieve. This parameter must match a property on the object with a key of "id" (all lowercase).</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<string>> GetAsync(object id, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> GetAsync(string databaseName, string collectionName, object id, Dictionary<string, string> headers = null)
         {
-            var url = GetStandardItemUrl(id.ToString());
+            var url = GetStandardItemUrl(databaseName, collectionName, id.ToString());
 
             try
             {
@@ -124,9 +103,9 @@ namespace Foundation.Sdk.Data
             }
         }
 
-        public async Task<ServiceResult<IEnumerable<string>>> GetAllAsync(Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<IEnumerable<string>>> GetAllAsync(string databaseName, string collectionName, Dictionary<string, string> headers = null)
         {
-            var url = GetStandardCollectionUrl();
+            var url = GetStandardCollectionUrl(databaseName, collectionName);
             try
             {
                 headers = Common.NormalizeHeaders(headers);
@@ -149,14 +128,16 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Finds a set of objects that match the specified find criteria
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="findExpression">The MongoDB-style find syntax</param>
         /// <param name="start">The index within the find results at which to start filtering</param>
-        /// <param name="size">The number of items within the find results to limit the result set to</param>
+        /// <param name="limit">The number of items within the find results to limit the result set to</param>
         /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the find criteria</returns>
-        public async Task<ServiceResult<SearchResults<string>>> FindAsync(string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults<string>>> FindAsync(string databaseName, string collectionName, string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             #region Input Validation
             if (start < 0)
@@ -174,7 +155,7 @@ namespace Foundation.Sdk.Data
             #endregion // Input Validation
 
             int sort = sortDirection == ListSortDirection.Descending ? 1 : -1;
-            var url = $"{GetStandardCollectionUrl()}/find?from={start}&size={limit}&sort={sortFieldName}&order={sort}";
+            var url = $"{GetStandardCollectionUrl(databaseName, collectionName)}/find?from={start}&size={limit}&sort={sortFieldName}&order={sort}";
 
             try
             {
@@ -198,29 +179,33 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Searches for a set of objects that match the specified query syntax
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="searchExpression">The Google-like query syntax</param>
         /// <param name="start">The index within the find results at which to start filtering</param>
-        /// <param name="size">The number of items within the find results to limit the result set to</param>
+        /// <param name="limit">The number of items within the find results to limit the result set to</param>
         /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the search criteria</returns>
-        public async Task<ServiceResult<SearchResults<string>>> SearchAsync(string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults<string>>> SearchAsync(string databaseName, string collectionName, string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             string convertedExpression = SearchStringConverter.BuildQuery(searchExpression);
-            return await FindAsync(findExpression: convertedExpression, start: start, limit: limit, sortFieldName: sortFieldName, sortDirection: sortDirection, headers: headers);
+            return await FindAsync(databaseName: databaseName, collectionName: collectionName, findExpression: convertedExpression, start: start, limit: limit, sortFieldName: sortFieldName, sortDirection: sortDirection, headers: headers);
         }
 
         /// <summary>
         /// Carries out a wholesale replacement of the object with the specified id
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="id">The id of the object. This parameter must match a property on the object with a key of "id" (all lowercase).</param>
         /// <param name="entity">The entity that will replace the object with the specified id</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<string>> ReplaceAsync(object id, string entity, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> ReplaceAsync(string databaseName, string collectionName, object id, string entity, Dictionary<string, string> headers = null)
         {
-            var url = GetStandardItemUrl(id.ToString());
+            var url = GetStandardItemUrl(databaseName, collectionName, id.ToString());
             try
             {
                 if (string.IsNullOrEmpty(entity))
@@ -256,14 +241,16 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Gets a count of objects that match the specified find criteria
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="payload">The search payload in MongoDB find syntax format; for more information see https://docs.mongodb.com/manual/reference/method/db.collection.find/</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of integer</returns>
-        public async Task<ServiceResult<long>> CountAsync(string payload, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<long>> CountAsync(string databaseName, string collectionName, string payload, Dictionary<string, string> headers = null)
         {
             try
             {
-                var url = $"{GetStandardCollectionUrl()}/count";
+                var url = $"{GetStandardCollectionUrl(databaseName, collectionName)}/count";
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<string> result = null;
 
@@ -290,12 +277,14 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Deletes an object by id
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="id">The id of the object. This parameter must match a property on the object with a key of "id" (all lowercase).</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of int</returns>
-        public async Task<ServiceResult<int>> DeleteAsync(object id, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<int>> DeleteAsync(string databaseName, string collectionName, object id, Dictionary<string, string> headers = null)
         {
-            var url = GetStandardItemUrl(id.ToString());
+            var url = GetStandardItemUrl(databaseName, collectionName, id.ToString());
             try
             {
                 headers = Common.NormalizeHeaders(headers);
@@ -319,21 +308,25 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Inserts an object with no specified Id. An ID is assigned by the database.
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="entity">The entity to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<string>> InsertAsync(string entity, Dictionary<string, string> headers = null) => await InsertAsync(id: null, entity: entity, headers: headers);
+        public async Task<ServiceResult<string>> InsertAsync(string databaseName, string collectionName, string entity, Dictionary<string, string> headers = null) => await InsertAsync(databaseName: databaseName, collectionName: collectionName, id: null, entity: entity, headers: headers);
 
         /// <summary>
         /// Inserts an object by id
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="id">The id of the object. This parameter must match a property on the object with a key of "_id" (all lowercase).</param>
         /// <param name="entity">The entity to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of T</returns>
-        public async Task<ServiceResult<string>> InsertAsync(object id, string entity, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> InsertAsync(string databaseName, string collectionName, object id, string entity, Dictionary<string, string> headers = null)
         {
-            string url = (id != null) ? GetStandardItemUrl(id.ToString()) : GetStandardCollectionUrl();
+            string url = (id != null) ? GetStandardItemUrl(databaseName, collectionName, id.ToString()) : GetStandardCollectionUrl(databaseName, collectionName);
             
             try
             {
@@ -376,12 +369,14 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Inserts many objects at once. IDs for the objects will be auto-generated.
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="entities">The entities to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of the IDs of the objects that were inserted</returns>
-        public async Task<ServiceResult<IEnumerable<string>>> InsertManyAsync(IEnumerable<string> entities, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<IEnumerable<string>>> InsertManyAsync(string databaseName, string collectionName, IEnumerable<string> entities, Dictionary<string, string> headers = null)
         {
-            var url = GetCollectionOperationUrl("multi");
+            var url = GetCollectionOperationUrl(databaseName, collectionName, "multi");
             try
             {
                 var payload = SerializeEntities(entities);
@@ -407,12 +402,14 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Aggregates data via an aggregation pipeline and returns an array of objects
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="aggregationExpression">The MongoDB-style aggregation expression; see https://docs.mongodb.com/manual/aggregation/</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>List of matching and/or transformed objects</returns>
-        public async Task<ServiceResult<string>> AggregateAsync(string aggregationExpression, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<string>> AggregateAsync(string databaseName, string collectionName, string aggregationExpression, Dictionary<string, string> headers = null)
         {
-            var url = $"{GetStandardCollectionUrl()}/aggregate";
+            var url = $"{GetStandardCollectionUrl(databaseName, collectionName)}/aggregate";
             try
             {
                 headers = Common.NormalizeHeaders(headers);
@@ -439,11 +436,13 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Deletes an entire collection
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of int</returns>
-        public async Task<ServiceResult<int>> DeleteCollectionAsync(Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<int>> DeleteCollectionAsync(string databaseName, string collectionName, Dictionary<string, string> headers = null)
         {
-            var url = GetStandardCollectionUrl();
+            var url = GetStandardCollectionUrl(databaseName, collectionName);
             try
             {
                 headers = Common.NormalizeHeaders(headers);
@@ -467,11 +466,13 @@ namespace Foundation.Sdk.Data
         /// <summary>
         /// Gets the distinct values for a given field in this collection
         /// </summary>
+        /// <param name="databaseName">Name of the database to use for this operation</param>
+        /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="fieldName">Name of the field to use for determining distinctness</param>
         /// <param name="payload">The search payload in MongoDB find syntax format; for more information see https://docs.mongodb.com/manual/reference/method/db.collection.find/</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of strings</returns>
-        public async Task<ServiceResult<List<string>>> GetDistinctAsync(string fieldName, string payload, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<List<string>>> GetDistinctAsync(string databaseName, string collectionName, string fieldName, string payload, Dictionary<string, string> headers = null)
         {
             #region Input Validation
             if (!_regexCollectionName.IsMatch(fieldName))
@@ -482,7 +483,7 @@ namespace Foundation.Sdk.Data
 
             try
             {
-                var url = $"{GetStandardUrl("distinct")}/{fieldName}";
+                var url = $"{GetStandardUrl(databaseName, collectionName, "distinct")}/{fieldName}";
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<List<string>> result = null;
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_TEXT_PLAIN, headers, payload);
@@ -515,13 +516,13 @@ namespace Foundation.Sdk.Data
 
         private string SerializeEntities(IEnumerable<string> entity) => "[" + string.Join(", ", entity) + "]";
 
-        private string GetStandardItemUrl(string id) => $"{_databaseName}/{_collectionName}/{id}";
+        private string GetStandardItemUrl(string databaseName, string collectionName, string id) => $"{databaseName}/{collectionName}/{id}";
 
-        private string GetStandardCollectionUrl() => $"{_databaseName}/{_collectionName}";
+        private string GetStandardCollectionUrl(string databaseName, string collectionName) => $"{databaseName}/{collectionName}";
 
-        private string GetStandardUrl(string routePart) => $"{_databaseName}/{_collectionName}/{routePart}";
+        private string GetStandardUrl(string databaseName, string collectionName, string routePart) => $"{databaseName}/{collectionName}/{routePart}";
 
-        private string GetCollectionOperationUrl(string operationName) => $"{operationName}/{_databaseName}/{_collectionName}";
+        private string GetCollectionOperationUrl(string databaseName, string collectionName, string operationName) => $"{operationName}/{databaseName}/{collectionName}";
 
         /// <summary>
         /// Forces an ID property into a JSON object

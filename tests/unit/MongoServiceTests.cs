@@ -40,10 +40,11 @@ namespace Foundation.Sdk.Tests
         {
             // Arrange
             IObjectService service = _fixture.CustomersService;
+            var collectionName = "customers";
 
             // Act
-            var insertResult = await service.InsertAsync(id, insertedJson);
-            var getResult = await service.GetAsync(id);
+            var insertResult = await service.InsertAsync("bookstore", collectionName, id, insertedJson);
+            var getResult = await service.GetAsync("bookstore", collectionName, id);
             
             // Assert
             Assert.Equal(200, getResult.Status);
@@ -57,7 +58,8 @@ namespace Foundation.Sdk.Tests
         public async Task Get_Object_fail_Not_Found(string id)
         {
             IObjectService service = _fixture.CustomersService;
-            var getResult = await service.GetAsync(id);
+            var collectionName = "customers";
+            var getResult = await service.GetAsync("bookstore", collectionName, id);
             Assert.Equal(404, getResult.Status);
         }
 
@@ -74,9 +76,10 @@ namespace Foundation.Sdk.Tests
         {
             // Arrange
             IObjectService service = _fixture.CustomersService;
+            var collectionName = "customers";
 
             // Act
-            var result = await service.InsertAsync(id, json);
+            var result = await service.InsertAsync("bookstore", collectionName, id, json);
             
             JObject jsonObject = JObject.Parse(result.Value);
             
@@ -95,11 +98,12 @@ namespace Foundation.Sdk.Tests
         public async Task Insert_fails_Duplicate_Ids(string id, string json)
         {
             IObjectService service = _fixture.CustomersService;
-            var result1 = await service.InsertAsync(id, json);
+            var collectionName = "customers";
+            var result1 = await service.InsertAsync("bookstore", collectionName, id, json);
 
             Assert.Equal(201, result1.Status);
 
-            var result2 = await service.InsertAsync(id, json);
+            var result2 = await service.InsertAsync("bookstore", collectionName, id, json);
             Assert.Equal(400, result2.Status);
         }
 
@@ -112,7 +116,8 @@ namespace Foundation.Sdk.Tests
         public async Task Insert_fails_Malformed_Json(string id, string json)
         {
             IObjectService service = _fixture.CustomersService;
-            var result = await service.InsertAsync(id, json);
+            var collectionName = "customers";
+            var result = await service.InsertAsync("bookstore", collectionName, id, json);
             Assert.Equal(400, result.Status);
         }
 
@@ -125,11 +130,12 @@ namespace Foundation.Sdk.Tests
         {
             // Arrange
             IObjectService service = _fixture.CustomersService;
+            var collectionName = "customers";
 
             // Act
-            var insertResult = await service.InsertAsync(id, json1);
+            var insertResult = await service.InsertAsync("bookstore", collectionName, id, json1);
 
-            var replaceResult = await service.ReplaceAsync(id, json2);
+            var replaceResult = await service.ReplaceAsync("bookstore", collectionName, id, json2);
 
             JObject jsonObject = JObject.Parse(replaceResult.Value);
             
@@ -150,7 +156,8 @@ namespace Foundation.Sdk.Tests
         public async Task Upsert_fails_Not_Found(string id, string json)
         {
             IObjectService service = _fixture.CustomersService;
-            var result = await service.ReplaceAsync(id, json);
+            var collectionName = "customers";
+            var result = await service.ReplaceAsync("bookstore", collectionName, id, json);
             Assert.Equal(404, result.Status);
         }
 
@@ -163,7 +170,8 @@ namespace Foundation.Sdk.Tests
         public async Task Replace_fails_Malformed_Json(string id, string json)
         {
             IObjectService service = _fixture.CustomersService;
-            var result = await service.ReplaceAsync(id, json);
+            var collectionName = "customers";
+            var result = await service.ReplaceAsync("bookstore", collectionName, id, json);
             Assert.Equal(400, result.Status);
         }
 
@@ -175,18 +183,20 @@ namespace Foundation.Sdk.Tests
             // Arrange
             IObjectService service = _fixture.CustomersService;
 
+            var collectionName = "customers";
+
             // Act
-            var insertResult = await service.InsertAsync(id, json);
-            var firstGetResult = await service.GetAsync(id);
+            var insertResult = await service.InsertAsync("bookstore", collectionName, id, json);
+            var firstGetResult = await service.GetAsync("bookstore", collectionName, id);
 
             Assert.Equal(200, firstGetResult.Status);
 
-            var deleteResult = await service.DeleteAsync(id);
+            var deleteResult = await service.DeleteAsync("bookstore", collectionName, id);
 
             Assert.Equal(200, deleteResult.Status);
             Assert.Equal(1, deleteResult.Value);
 
-            var secondGetResult = await service.GetAsync(id);
+            var secondGetResult = await service.GetAsync("bookstore", collectionName, id);
 
             Assert.True(string.IsNullOrEmpty(secondGetResult.Value));
         }
@@ -197,7 +207,9 @@ namespace Foundation.Sdk.Tests
         public async Task Delete_Object_fails_Not_Found(string id)
         {
             IObjectService service = _fixture.CustomersService;
-            var deleteResult = await service.DeleteAsync(id);
+            var collectionName = "customers";
+
+            var deleteResult = await service.DeleteAsync("bookstore", collectionName, id);
             Assert.Equal(404, deleteResult.Status);
             Assert.Equal(0, deleteResult.Value);
         }
@@ -223,9 +235,10 @@ namespace Foundation.Sdk.Tests
         [InlineData("{ title: /^(the|of)/i, pages: { $lt: 500 }, author: /^(john)/i }", 0, -1, 2)]
         public async Task Find_Objects_in_Collection(string findExpression, int start, int limit, int expectedCount)
         {
-            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", "historicalbooks", _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, _fixture.Logger);
+            var collectionName = "historicalbooks";
 
-            var findResult = await service.FindAsync(findExpression, start, limit, "title", ListSortDirection.Ascending);
+            var findResult = await service.FindAsync("bookstore", collectionName, findExpression, start, limit, "title", ListSortDirection.Ascending);
             Assert.Equal(200, findResult.Status);
 
             SearchResults<string> results = findResult.Value;
@@ -233,29 +246,30 @@ namespace Foundation.Sdk.Tests
         }
 
         [Theory]
-        [InlineData("historicalbooks", "pages>464", 2)]
-        [InlineData("historicalbooks", "pages>=464", 3)]
-        [InlineData("historicalbooks", "pages<464", 8)]
-        [InlineData("historicalbooks", "pages>=288", 5)]
-        [InlineData("historicalbooks", "pages:288", 2)]
-        [InlineData("historicalbooks", "pages!:288", 9)]
-        [InlineData("historicalbooks", "title:Slaughterhouse-Five", 1)]
-        [InlineData("historicalbooks", "title:\"Slaughterhouse-Five\"", 1)]
-        [InlineData("historicalbooks", "title:\"The Red Badge of Courage\" pages>50", 1)]
-        [InlineData("historicalbooks", "title:\"The Great Gatsby\" pages>250", 0)]
-        [InlineData("historicalbooks", "title:\"The Great Gatsby\" pages<250", 1)]
-        [InlineData("historicalbooks", "title:\"The Great Gatsby\" pages<250 author:\"F. Scott Fitzgerald\"", 1)]
-        [InlineData("historicalbooks", "author:\"John Steinbeck\"", 2)]
-        [InlineData("historicalbooks", "author:\"John Steinbeck\" pages<=464", 2)]
-        [InlineData("historicalbooks", "author:\"John Steinbeck\" pages<464", 1)]
-        [InlineData("historicalbooks", "pages<464 author:\"John Steinbeck\"", 1)]
-        [InlineData("historicalbooks", "author:\"Cervantes\"", 0)]
-        [InlineData("historicalbooks", "author!:\"John Steinbeck\"", 9)]
-        public async Task Search_Collection(string collectionName, string qs, int expectedCount)
+        [InlineData("pages>464", 2)]
+        [InlineData("pages>=464", 3)]
+        [InlineData("pages<464", 8)]
+        [InlineData("pages>=288", 5)]
+        [InlineData("pages:288", 2)]
+        [InlineData("pages!:288", 9)]
+        [InlineData("title:Slaughterhouse-Five", 1)]
+        [InlineData("title:\"Slaughterhouse-Five\"", 1)]
+        [InlineData("title:\"The Red Badge of Courage\" pages>50", 1)]
+        [InlineData("title:\"The Great Gatsby\" pages>250", 0)]
+        [InlineData("title:\"The Great Gatsby\" pages<250", 1)]
+        [InlineData("title:\"The Great Gatsby\" pages<250 author:\"F. Scott Fitzgerald\"", 1)]
+        [InlineData("author:\"John Steinbeck\"", 2)]
+        [InlineData("author:\"John Steinbeck\" pages<=464", 2)]
+        [InlineData("author:\"John Steinbeck\" pages<464", 1)]
+        [InlineData("pages<464 author:\"John Steinbeck\"", 1)]
+        [InlineData("author:\"Cervantes\"", 0)]
+        [InlineData("author!:\"John Steinbeck\"", 9)]
+        public async Task Search_Collection(string qs, int expectedCount)
         {
-            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, _fixture.Logger);
+            var collectionName = "historicalbooks";
 
-            var searchResult = await service.SearchAsync(qs, 0, -1, "title");
+            var searchResult = await service.SearchAsync("bookstore", collectionName, qs, 0, -1, "title");
             Assert.Equal(200, searchResult.Status);
             Assert.Equal(expectedCount, searchResult.Value.Items.Count);
         }
@@ -265,25 +279,25 @@ namespace Foundation.Sdk.Tests
         [InlineData("qpdnv", "2", "{ \"title\": \"Don Quixote\" }")]
         public async Task Delete_Collection(string collectionName, string id, string json)
         {
-            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, _fixture.Logger);
 
             // Try getting items in the collection. Collection doesn't exist yet, should get a 404
-            var getFirstCollectionResult = await service.GetAllAsync();
+            var getFirstCollectionResult = await service.GetAllAsync("bookstore", collectionName);
             Assert.Equal(404, getFirstCollectionResult.Status);
 
             // Add an item to collection; Mongo auto-creates the collection            
-            var insertResult = await service.InsertAsync(id, json);
+            var insertResult = await service.InsertAsync("bookstore", collectionName, id, json);
 
             // // Try getting items in collection a 2nd time. Now it should return a 200.
-            var getSecondCollectionResult = await service.GetAllAsync();
+            var getSecondCollectionResult = await service.GetAllAsync("bookstore", collectionName);
             Assert.Equal(200, getSecondCollectionResult.Status);
 
             // Delete the collection
-            var deleteCollectionResult = await service.DeleteCollectionAsync();
+            var deleteCollectionResult = await service.DeleteCollectionAsync("bookstore", collectionName);
             Assert.Equal(200, deleteCollectionResult.Status);
 
             // Try getting items in collection a 3rd time. It was just deleted so we should get a 404.
-            var getThirdCollectionResult = await service.GetAllAsync();
+            var getThirdCollectionResult = await service.GetAllAsync("bookstore", collectionName);
             Assert.Equal(404, getThirdCollectionResult.Status);
         }
 
@@ -291,7 +305,7 @@ namespace Foundation.Sdk.Tests
         public async Task Get_Collection()
         {
             var collectionName = "orders2";
-            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -311,7 +325,7 @@ namespace Foundation.Sdk.Tests
             int insertedItemsCount = 0;
             foreach (var item in items)
             {
-                var insertResult = await service.InsertAsync(item);
+                var insertResult = await service.InsertAsync("bookstore", collectionName, item);
                 if (insertResult.Status == 201)
                 {
                     insertedItemsCount++;
@@ -329,7 +343,7 @@ namespace Foundation.Sdk.Tests
             Assert.Equal(items.Count, insertedItemsCount); // test that all inserts worked as expected
 
             // Try getting items in collection
-            var getCollectionResult = await service.GetAllAsync();
+            var getCollectionResult = await service.GetAllAsync("bookstore", collectionName);
             Assert.Equal(200, getCollectionResult.Status);
 
             Assert.Equal(items.Count, getCollectionResult.Value.Count());
@@ -348,7 +362,7 @@ namespace Foundation.Sdk.Tests
         public async Task Insert_Multiple_Objects()
         {
             var collectionName = "orders3";
-            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -364,7 +378,7 @@ namespace Foundation.Sdk.Tests
                 "{ \"title\": \"The Great Gatsby\" }"
             };
 
-            var insertManyResult = await service.InsertManyAsync(items);
+            var insertManyResult = await service.InsertManyAsync("bookstore", collectionName, items);
             Assert.Equal(201, insertManyResult.Status);
             Assert.Equal(10, insertManyResult.Value.Count());
 
@@ -375,7 +389,7 @@ namespace Foundation.Sdk.Tests
             }
 
             // Try getting items in collection
-            var getCollectionResult = await service.GetAllAsync();
+            var getCollectionResult = await service.GetAllAsync("bookstore", collectionName);
             Assert.Equal(200, getCollectionResult.Status);
             Assert.Equal(10, getCollectionResult.Value.Count());
 
@@ -408,7 +422,7 @@ namespace Foundation.Sdk.Tests
         public async Task Insert_Multiple_Objects_Fail_Malformed_Json()
         {
             var collectionName = "orders4";
-            var repo = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            var repo = new MongoService(_fixture.MongoClient, _fixture.Logger);
 
             var items = new List<string>() 
             {
@@ -426,7 +440,7 @@ namespace Foundation.Sdk.Tests
 
             try 
             {
-                var insertManyResult = await repo.InsertManyAsync(items);
+                var insertManyResult = await repo.InsertManyAsync("bookstore", collectionName, items);
                 throw new InvalidOperationException();
             }
             catch (Exception ex)
@@ -435,7 +449,7 @@ namespace Foundation.Sdk.Tests
             }
 
             // Try getting items in collection, ensure nothing was inserted
-            var getCollectionResult = await repo.GetAllAsync();
+            var getCollectionResult = await repo.GetAllAsync("bookstore", collectionName);
             Assert.Equal(404, getCollectionResult.Status);
         }
 
@@ -447,9 +461,9 @@ namespace Foundation.Sdk.Tests
         [InlineData("historicalbooks", "[{ $match: { title: /^(the|a)/i } }, { $limit: 200 }]", 6)]
         public async Task Aggregate_Match(string collectionName, string aggregateExpression, int expectedCount)
         {
-            var repo = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            var repo = new MongoService(_fixture.MongoClient, _fixture.Logger);
 
-            var aggregateResult = await repo.AggregateAsync(aggregateExpression);
+            var aggregateResult = await repo.AggregateAsync("bookstore", collectionName, aggregateExpression);
             var array = JArray.Parse(aggregateResult.Value);
             Assert.Equal(200, aggregateResult.Status);            
             Assert.Equal(expectedCount, array.Count);
@@ -459,9 +473,9 @@ namespace Foundation.Sdk.Tests
         [InlineData("historicalbooks", "[{ $match: { title: /^(the|a)/i } }, { $count: \"numberOfBooks\" }]", "numberOfBooks", 6)]
         public async Task Aggregate_Count(string collectionName, string aggregateExpression, string propertyName, int expectedCount)
         {
-            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, _fixture.Logger);
 
-            var aggregateResult = await service.AggregateAsync(aggregateExpression);
+            var aggregateResult = await service.AggregateAsync("bookstore", collectionName, aggregateExpression);
             Assert.Equal(200, aggregateResult.Status);
 
             JToken token = JArray.Parse(aggregateResult.Value).FirstOrDefault();
@@ -476,9 +490,9 @@ namespace Foundation.Sdk.Tests
         [InlineData("historicalbooks", "title", "{ title: /^(the|a)/i }", 6)]
         public async Task Distinct(string collectionName, string fieldName, string findExpression, int expectedCount)
         {
-            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, _fixture.Logger);
 
-            var distinctResult = await service.GetDistinctAsync(fieldName, findExpression);
+            var distinctResult = await service.GetDistinctAsync("bookstore", collectionName, fieldName, findExpression);
             Assert.Equal(200, distinctResult.Status);            
             Assert.Equal(expectedCount, distinctResult.Value.Count);
         }
@@ -490,9 +504,9 @@ namespace Foundation.Sdk.Tests
         [InlineData("historicalbooks", "{ title: /^(a)/i }", 1)]
         public async Task Count(string collectionName, string findExpression, int expectedCount)
         {
-            IObjectService service = new MongoService(_fixture.MongoClient, "bookstore", collectionName, _fixture.Logger);
+            IObjectService service = new MongoService(_fixture.MongoClient, _fixture.Logger);
 
-            var distinctResult = await service.CountAsync(findExpression);
+            var distinctResult = await service.CountAsync("bookstore", collectionName, findExpression);
             Assert.Equal(200, distinctResult.Status);            
             Assert.Equal(expectedCount, distinctResult.Value);
         }
@@ -514,8 +528,8 @@ namespace Foundation.Sdk.Tests
             _runner = MongoDbRunner.Start();
             MongoClient = new MongoClient(_runner.ConnectionString);
 
-            CustomersService = new MongoService(MongoClient, "bookstore", "customer", Logger);
-            BooksService = new MongoService(MongoClient, "bookstore", "books", Logger);
+            CustomersService = new MongoService(MongoClient, Logger);
+            BooksService = new MongoService(MongoClient, Logger);
 
             LoadBooks();
         }
@@ -536,8 +550,8 @@ namespace Foundation.Sdk.Tests
                 Books.Add(json);
             }
 
-            IObjectService service = new MongoService(MongoClient, "bookstore", "historicalbooks", Logger);
-            var insertManyResult = service.InsertManyAsync(Books).Result;
+            IObjectService service = new MongoService(MongoClient, Logger);
+            var insertManyResult = service.InsertManyAsync("bookstore", "historicalbooks", Books).Result;
 
             Assert.Equal(201, insertManyResult.Status);
             Assert.Equal(jsonFiles.Length, insertManyResult.Value.Count());
