@@ -5,7 +5,7 @@ using System.Net.Http;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Moq;
-using Foundation.Sdk.Data;
+using Foundation.Sdk.Services;
 using Foundation.Sdk.Tests.Models;
 using RichardSzalay.MockHttp;
 using Newtonsoft.Json.Linq;
@@ -74,8 +74,8 @@ namespace Foundation.Sdk.Tests
             var repo = new HttpObjectService("unittests", _objectFixture.ClientFactory, _objectFixture.Logger);
 
             var findTask = repo.FindAsync("bookstore", "customer", findExpression: string.Empty, start: 0, limit: -1, sortFieldName: string.Empty, sortDirection: System.ComponentModel.ListSortDirection.Descending);
-            ServiceResult<SearchResults<string>> result = findTask.Result;
-            SearchResults<string> searchResults = result.Value;
+            ServiceResult<SearchResults> result = findTask.Result;
+            SearchResults searchResults = result.Value;
             Assert.Equal((int)HttpStatusCode.OK, result.Status);
             Assert.Equal(2, searchResults.Items.Count);
             Assert.Equal("Object", result.ServiceName);

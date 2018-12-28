@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Collections.Generic;
 
-namespace Foundation.Sdk.Data
+namespace Foundation.Sdk.Services
 {
     /// <summary>
     /// Class for interacting with the Storage Foundation Service (see https://github.com/CDCgov/fdns-ms-storage) over HTTP

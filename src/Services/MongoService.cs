@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 
-namespace Foundation.Sdk.Data
+namespace Foundation.Sdk.Services
 {
     /// <summary>
     /// Class representing a MongoDB service for arbitrary, untyped Json objects
@@ -310,7 +310,7 @@ namespace Foundation.Sdk.Data
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the find criteria</returns>
-        public async Task<ServiceResult<SearchResults<string>>> FindAsync(string databaseName, string collectionName, string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults>> FindAsync(string databaseName, string collectionName, string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             try
             {
@@ -338,14 +338,14 @@ namespace Foundation.Sdk.Data
                     items.Add(item);
                 }
 
-                SearchResults<string> searchResults = new SearchResults<string>()
+                SearchResults searchResults = new SearchResults()
                 {
                     Items = items,
                     From = start,
                     Total = items.Count
                 };
 
-                var result = new ServiceResult<SearchResults<string>>(
+                var result = new ServiceResult<SearchResults>(
                     value: searchResults, 
                     status: 200, 
                     correlationId: Common.GetCorrelationIdFromHeaders(headers), 
@@ -373,7 +373,7 @@ namespace Foundation.Sdk.Data
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the search criteria</returns>
-        public async Task<ServiceResult<SearchResults<string>>> SearchAsync(string databaseName, string collectionName, string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults>> SearchAsync(string databaseName, string collectionName, string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             var database = GetDatabase(databaseName);
             var collection = GetCollection(database, collectionName);

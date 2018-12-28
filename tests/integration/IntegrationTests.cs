@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Moq;
-using Foundation.Sdk.Data;
+using Foundation.Sdk.Services;
 using RichardSzalay.MockHttp;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

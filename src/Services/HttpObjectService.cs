@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using MongoDB.Bson;
 
-namespace Foundation.Sdk.Data
+namespace Foundation.Sdk.Services
 {
     /// <summary>
     /// Class for interacting with the FDNS Object microservice (see https://github.com/CDCgov/fdns-ms-object) over HTTP
@@ -137,7 +137,7 @@ namespace Foundation.Sdk.Data
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the find criteria</returns>
-        public async Task<ServiceResult<SearchResults<string>>> FindAsync(string databaseName, string collectionName, string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults>> FindAsync(string databaseName, string collectionName, string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             #region Input Validation
             if (start < 0)
@@ -160,7 +160,7 @@ namespace Foundation.Sdk.Data
             try
             {
                 headers = Common.NormalizeHeaders(headers);
-                ServiceResult<SearchResults<string>> result = null;
+                ServiceResult<SearchResults> result = null;
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_TEXT_PLAIN, headers, findExpression);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
@@ -188,7 +188,7 @@ namespace Foundation.Sdk.Data
         /// <param name="sortDirection">The sort direction</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the search criteria</returns>
-        public async Task<ServiceResult<SearchResults<string>>> SearchAsync(string databaseName, string collectionName, string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults>> SearchAsync(string databaseName, string collectionName, string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
         {
             string convertedExpression = SearchStringConverter.BuildQuery(searchExpression);
             return await FindAsync(databaseName: databaseName, collectionName: collectionName, findExpression: convertedExpression, start: start, limit: limit, sortFieldName: sortFieldName, sortDirection: sortDirection, headers: headers);

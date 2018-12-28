@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Foundation.Sdk.Data
+namespace Foundation.Sdk.Services
 {
     /// <summary>
     /// Interface for interacting with the Storage Foundation Service (see https://github.com/CDCgov/fdns-ms-storage)

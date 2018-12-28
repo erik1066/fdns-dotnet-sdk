@@ -76,7 +76,7 @@ namespace Foundation.Sdk
             return result;
         }
 
-        public static async Task<ServiceResult<SearchResults<string>>> GetHttpResultAsServiceResultOfSearchResultsAsync(HttpResponseMessage response, string serviceName, string uri, Dictionary<string, string> headers, int start)
+        public static async Task<ServiceResult<SearchResults>> GetHttpResultAsServiceResultOfSearchResultsAsync(HttpResponseMessage response, string serviceName, string uri, Dictionary<string, string> headers, int start)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -92,14 +92,20 @@ namespace Foundation.Sdk
                 items.Add(item);
             }
 
-            SearchResults<string> searchResults = new SearchResults<string>()
+            SearchResults searchResults = new SearchResults()
             {
                 Items = items,
                 From = start,
                 Total = items.Count
             };
 
-            var result = new ServiceResult<SearchResults<string>>(value: searchResults, status: (int)response.StatusCode, correlationId: GetCorrelationIdFromHeaders(headers), message: GetErrorMessage(response, json), servicename: serviceName);
+            var result = new ServiceResult<SearchResults>(
+                value: searchResults, 
+                status: (int)response.StatusCode, 
+                correlationId: GetCorrelationIdFromHeaders(headers), 
+                message: GetErrorMessage(response, json), 
+                servicename: serviceName);
+                
             return result;
         }
 

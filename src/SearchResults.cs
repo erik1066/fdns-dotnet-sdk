@@ -5,7 +5,7 @@ namespace Foundation.Sdk
     /// <summary>
     /// Class representing a result set of T
     /// </summary>
-    public class SearchResults<T>
+    public class SearchResults
     {
         /// <summary>
         /// Gets/sets the total number of objects in the collection
@@ -30,6 +30,12 @@ namespace Foundation.Sdk
         /// <summary>
         /// Gets/sets the instances of T that were returned in the result set
         /// </summary>
-        public List<T> Items { get; set; } = new List<T>();
+        public List<string> Items { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Stringifies the items in the search results
+        /// </summary>
+        /// <returns>String representation of a Json array. The Json array represents the items returned in the search results.</returns>
+        public string StringifyItems() => "[ " + string.Join(",", Items) + " ]";
     }
 }

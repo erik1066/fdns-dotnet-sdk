@@ -19,7 +19,7 @@ using Moq;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Foundation.Sdk.Data;
+using Foundation.Sdk.Services;
 
 namespace Foundation.Sdk.Tests
 {
@@ -241,7 +241,7 @@ namespace Foundation.Sdk.Tests
             var findResult = await service.FindAsync("bookstore", collectionName, findExpression, start, limit, "title", ListSortDirection.Ascending);
             Assert.Equal(200, findResult.Status);
 
-            SearchResults<string> results = findResult.Value;
+            SearchResults results = findResult.Value;
             Assert.Equal(expectedCount, results.Count);
         }
 

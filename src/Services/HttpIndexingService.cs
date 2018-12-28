@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Foundation.Sdk.Data
+namespace Foundation.Sdk.Services
 {
     /// <summary>
     /// Class for interacting with the Indexing Foundation Service (see https://github.com/CDCgov/fdns-ms-indexing) over HTTP
