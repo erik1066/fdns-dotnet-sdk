@@ -10,7 +10,7 @@ There are many tutorials that show how to create a basic .NET Core 2.x web appli
 
 ```xml
 <ItemGroup>
-    <PackageReference Include="Foundation.Sdk" Version="0.0.5" />
+    <PackageReference Include="Foundation.Sdk" Version="0.0.6" />
 </ItemGroup>
 ```
 
@@ -19,8 +19,6 @@ You may be prompted to restore packages after saving the `.csproj` file. You may
 See [Package references in project files](https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files) for more information.
 
 To add a NuGet package in **Visual Studio**, see [Quickstart: Install and use a package in Visual Studio](https://docs.microsoft.com/en-us/nuget/quickstart/install-and-use-a-package-in-visual-studio).
-
-
 
 ## SDK Quick-start Guides:
 
