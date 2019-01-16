@@ -1,0 +1,45 @@
+[{
+    "type": "insert-many",
+    "data": [
+        {
+            "_id": "75",
+            "title": "To Kill a Mockingbird",
+            "author": "Harper Lee",
+            "publisher": "Grand Central Publishing",
+            "language": "English",
+            "pages": 384,
+            "originalYear": 1960,
+            "year": 1988,
+            "weight": 6.4,
+            "isbn": {
+                "isbn-10": "0446310786",
+                "isbn-13": "978-0446310789"
+            }
+        },
+        {
+            "_id": "76",
+            "title": "One Hundred Years of Solitude",
+            "author": "Gabriel García Márquez",
+            "publisher": "Harper Perennial Modern Classics",
+            "language": "English",
+            "pages": 417,
+            "originalYear": 1982,
+            "year": 2006,
+            "weight": 12,
+            "isbn": {
+                "isbn-10": "9780060883287",
+                "isbn-13": "978-0060883287"
+            }
+        }
+    ],
+    "expected": 
+    {
+        "status": 200,
+        "titles": [ 
+            "To Kill a Mockingbird", 
+            "One Hundred Years of Solitude"
+        ],
+        "ids" : [ "75", "76" ]
+    },
+    "purpose": "Test whether multiple objects can be bulk-inserted. Variation: String Id values"
+}]

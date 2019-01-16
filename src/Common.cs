@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Foundation.Sdk
 {
@@ -21,23 +22,22 @@ namespace Foundation.Sdk
         public const string INSERT_AUTHORIZATION_NAME = "insert";
         public const string UPDATE_AUTHORIZATION_NAME = "update";
         public const string DELETE_AUTHORIZATION_NAME = "delete";
+        public const string CORRELATION_ID_HEADER = "X-Correlation-Id";
 
         public static async Task<ServiceResult<T>> GetHttpResultAsServiceResultAsync<T>(HttpResponseMessage response, string serviceName, string uri, Dictionary<string, string> headers)
         {
             var sw = new Stopwatch();
             sw.Start();
-
-            var responseValue = await response.Content.ReadAsStringAsync();
-
+            var json = await response.Content.ReadAsStringAsync();
             sw.Stop();
 
             T objectValue = default(T);
 
             if (typeof(T) == typeof(String))
             {
-                if (responseValue != null)
+                if (json != null)
                 {
-                    objectValue = (T)(object)responseValue;
+                    objectValue = (T)(object)json;
                 }
                 else
                 {
@@ -46,29 +46,86 @@ namespace Foundation.Sdk
             }
             else
             {
-                if (!string.IsNullOrEmpty(responseValue))
+                if (!string.IsNullOrEmpty(json))
                 {
-                    objectValue = JsonConvert.DeserializeObject<T>(responseValue);
+                    objectValue = JsonConvert.DeserializeObject<T>(json);
                 }
             }
 
+            var result = new ServiceResult<T>(value: objectValue, status: (int)response.StatusCode, correlationId: GetCorrelationIdFromHeaders(headers), message: GetErrorMessage(response, json), servicename: serviceName);
+            return result;
+        }
+
+        public static async Task<ServiceResult<IEnumerable<string>>> GetHttpResultAsServiceResultListAsync(HttpResponseMessage response, string serviceName, string uri, Dictionary<string, string> headers)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var json = await response.Content.ReadAsStringAsync();
+            sw.Stop();
+
+            var items = new List<string>();
+
+            JArray array = JArray.Parse(json);
+            foreach (var jObject in array)
+            {
+                var item = jObject.ToString();
+                items.Add(item);
+            }
+
+            var result = new ServiceResult<IEnumerable<string>>(value: items, status: (int)response.StatusCode, correlationId: GetCorrelationIdFromHeaders(headers), message: GetErrorMessage(response, json), servicename: serviceName);
+            return result;
+        }
+
+        public static async Task<ServiceResult<SearchResults>> GetHttpResultAsServiceResultOfSearchResultsAsync(HttpResponseMessage response, string serviceName, string uri, Dictionary<string, string> headers, int start)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var json = await response.Content.ReadAsStringAsync();
+            sw.Stop();
+
+            var items = new List<string>();
+
+            JArray array = JArray.Parse(json);
+            foreach (var jObject in array)
+            {
+                var item = jObject.ToString();
+                items.Add(item);
+            }
+
+            SearchResults searchResults = new SearchResults()
+            {
+                Items = items,
+                From = start,
+                Total = items.Count
+            };
+
+            var result = new ServiceResult<SearchResults>(
+                value: searchResults, 
+                status: (int)response.StatusCode, 
+                correlationId: GetCorrelationIdFromHeaders(headers), 
+                message: GetErrorMessage(response, json), 
+                servicename: serviceName);
+                
+            return result;
+        }
+
+        private static string GetErrorMessage(HttpResponseMessage response, string json)
+        {
             string message = string.Empty;
 
-            if (response.IsSuccessStatusCode == false && !string.IsNullOrEmpty(responseValue))
+            if (response.IsSuccessStatusCode == false && !string.IsNullOrEmpty(json))
             {
-                var errorPayload = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseValue);
+                var errorPayload = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
                 if (errorPayload.ContainsKey("message"))
                 {
                     message = errorPayload["message"] != null ? errorPayload["message"].ToString() : string.Empty;
                 }
             }
 
-            string correlationId = GetCorrelationIdFromHeaders(headers);
-            var result = new ServiceResult<T>(uri, sw.Elapsed, objectValue, serviceName, response.IsSuccessStatusCode, response.StatusCode, correlationId, message);
-            return result;
+            return message;
         }
 
-        public static string GetCorrelationIdFromHeaders(Dictionary<string, string> headers) => headers != null ? (headers.ContainsKey("X-Correlation-Id") ? headers["X-Correlation-Id"] : string.Empty) : string.Empty;
+        public static string GetCorrelationIdFromHeaders(Dictionary<string, string> headers) => headers != null ? (headers.ContainsKey(CORRELATION_ID_HEADER) ? headers[CORRELATION_ID_HEADER] : string.Empty) : string.Empty;
 
         public static void AddHttpRequestHeaders(HttpRequestMessage requestMessage, string senderName, string destinationName, Dictionary<string, string> headers)
         {
@@ -82,10 +139,10 @@ namespace Foundation.Sdk
                     requestMessage.Headers.Add(kvp.Key, kvp.Value);
                 }
 
-                if (!headers.ContainsKey("X-Correlation-Id"))
+                if (!headers.ContainsKey(CORRELATION_ID_HEADER))
                 {
                     string correlationId = System.Guid.NewGuid().ToString().Substring(0, 18);
-                    requestMessage.Headers.Add("X-Correlation-Id", correlationId);
+                    requestMessage.Headers.Add(CORRELATION_ID_HEADER, correlationId);
                 }
             }
         }

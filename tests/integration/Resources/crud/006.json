@@ -1,0 +1,10 @@
+[{
+    "type": "upsert-fail-primitive-id",
+    "contentType": "application/json",
+    "data": "{ \"title\" : \"Red Badge of Courage\" }",
+    "id": 31,
+    "expected": {
+        "status": 404
+    },
+    "purpose": "Test whether the service disallows upserts"
+}]

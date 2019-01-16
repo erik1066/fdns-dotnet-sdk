@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.0;netcoreapp2.1;netcoreapp2.2</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.1;netcoreapp2.2</TargetFrameworks>
+    <EmbedAllSources>True</EmbedAllSources>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <Authors>Erik Knudsen</Authors>
@@ -13,7 +14,7 @@
     <PackageDescription>A .NET Core SDK for interacting with the Foundation Services. The Foundation Services are a collection of general purpose, open source microservices authored by the U.S. Centers for Disease Control and Prevention.</PackageDescription>
     <Copyright>Copyright © 2018 Erik Knudsen</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageTags>microservice sdk fdns dotnet csharp cdc</PackageTags>
+    <PackageTags>microservice sdk fdns dotnet dotnetcore csharp cdc</PackageTags>
     <PackageProjectUrl>https://github.com/erik1066/fdns-dotnet-sdk</PackageProjectUrl>
     <RepositoryUrl>https://github.com/erik1066/fdns-dotnet-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -22,12 +23,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
-    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.1.3" />
+
+    <PackageReference Include="MongoDB.Driver" Version="2.7.2" />
+    <PackageReference Include="MongoDB.Driver.Core" Version="2.7.2" />
+
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
 </Project>

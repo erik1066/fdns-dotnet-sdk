@@ -1,0 +1,50 @@
+[{
+    "type": "get-by-objectid",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"The Red Badge of Courage\" }",
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : %%%, \"title\" : \"The Red Badge of Courage\" }"
+    },
+    "purpose": "Test whether an object with an OID can be retrieved"
+},
+{
+    "type": "get-by-objectid",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"A Connecticut Yankee in King Arthur's Court\" }",
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : %%%, \"title\" : \"A Connecticut Yankee in King Arthur's Court\" }"
+    },
+    "purpose": "Test whether an object with an OID can be retrieved. Variation: Handles apostrophes in string literals (title)"
+},
+{
+    "type": "get-by-objectid",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"A Connecticut Yankee in King Arthur's Court\", \"pages\": 116 }",
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : %%%, \"title\" : \"A Connecticut Yankee in King Arthur's Court\", \"pages\" : 116 }"
+    },
+    "purpose": "Test whether an object with an OID can be retrieved. Variation: Handles integer property values (pages)"
+},
+{
+    "type": "get-by-objectid",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"Of Mice and Men\", \"author\": \"John Steinbeck\", \"pages\": 112, \"isbn\": { \"isbn-10\" : \"0140177396\", \"isbn-13\" : \"978-0140177398\" } }",
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : %%%, \"title\" : \"Of Mice and Men\", \"author\" : \"John Steinbeck\", \"pages\" : 112, \"isbn\" : { \"isbn-10\" : \"0140177396\", \"isbn-13\" : \"978-0140177398\" } }"
+    },
+    "purpose": "Test whether an object with an OID can be retrieved. Variation: Handles object property values (isbn)"
+},
+{
+    "type": "get-by-objectid",
+    "contentType": "application/json",
+    "data": "{ \"title\": \"Fahrenheit 451\", \"author\": \"Ray Bradbury\", \"pages\": 249, \"tags\": [ \"dystopian\", \"firemen\" ] }",
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : %%%, \"title\" : \"Fahrenheit 451\", \"author\" : \"Ray Bradbury\", \"pages\" : 249, \"tags\" : [\"dystopian\", \"firemen\"] }"
+    },
+    "purpose": "Test whether an object with an OID can be retrieved. Variation: Handles array property values (tags)"
+}]

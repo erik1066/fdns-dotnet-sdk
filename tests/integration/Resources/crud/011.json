@@ -1,0 +1,10 @@
+[{
+    "type": "crud-combo-test-primitive-id",
+    "contentType": "application/json",
+    "id": 61,
+    "data": [ "{ \"title\": \"Red Badge of Courage\" }", "{ \"title\": \"The Red Badge of Courage\" }" ],
+    "expected": {
+        "value": "{ \"_id\" : \"61\", \"title\" : \"The Red Badge of Courage\" }"
+    },
+    "purpose": "Test a combination of insert, retrieve, replace, and deletion operations"
+}]

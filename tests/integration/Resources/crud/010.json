@@ -1,0 +1,18 @@
+[{
+    "type": "crud-combo-test-objectid",
+    "contentType": "application/json",
+    "data": [ "{ \"title\": \"Red Badge of Courage\" }", "{ \"title\": \"The Red Badge of Courage\" }" ],
+    "purpose": "Test a combination of insert, retrieve, replace, and deletion operations"
+},
+{
+    "type": "crud-combo-test-objectid",
+    "contentType": "application/json",
+    "data": [ "{ \"title\": \"The Red Badge of Courage\", \"author\": \"Stephen Crane\", \"pages\": 111, \"isbn\": { \"isbn-10\": \"0486264653\", \"isbn-13\": \"978-0486264653\" } }", "{ \"title\": \"The Red Badge of Courage\", \"author\": \"Stephen Crane\", \"pages\": 112, \"isbn\": { \"isbn-10\": \"0486264653\", \"isbn-13\": \"978-0486264653\" } }" ],
+    "purpose": "Test a combination of insert, retrieve, replace, and deletion operations. Variation: Replace operation updates an integer value"
+},
+{
+    "type": "crud-combo-test-objectid",
+    "contentType": "application/json",
+    "data": [ "{ \"title\": \"The Red Badge of Courage\", \"author\": \"Stephen Crane\", \"pages\": 112, \"isbn\": { \"isbn-10\": \"0486264653\", \"isbn-13\": \"978-0486264653\" } }", "{ \"title\": \"The Red Badge of Courage\", \"author\": \"Stephen Crane\", \"pages\": 112 }" ],
+    "purpose": "Test a combination of insert, retrieve, replace, and deletion operations. Variation: Replace operation removes an object"
+}]

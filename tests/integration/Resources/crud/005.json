@@ -1,0 +1,21 @@
+[{
+    "type": "replace-with-primitive-id",
+    "contentType": "application/json",
+    "data": [ "{ \"title\" : \"Red Badge of Courage\" }", "{ \"title\" : \"The Red Badge of Courage\" }" ],
+    "id": 21,
+    "expected": {
+        "status": 200,
+        "value": "{ \"_id\" : \"21\", \"title\" : \"The Red Badge of Courage\" }"
+    },
+    "purpose": "Test whether an object with a non-ObjectID identifier can be used to replace an existing object with that ID"
+},
+{
+    "type": "replace-with-primitive-id",
+    "contentType": "application/json",
+    "data": [ "{ \"title\" : \"Red Badge of Courage\" }", "{ \"title\" : \"The Red Badge of Courage\" " ],
+    "id": 22,
+    "expected": {
+        "status": 400
+    },
+    "purpose": "Test whether the service returns a 400 when given invalid Json. Variation: Missing closing brace"
+}]
