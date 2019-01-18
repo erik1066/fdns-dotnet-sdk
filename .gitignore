@@ -29,6 +29,9 @@ _ReSharper.*
 *.orig
 .DS_Store
 
+# Sonarqube
+.sonarqube
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
