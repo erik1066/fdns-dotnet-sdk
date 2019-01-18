@@ -16,8 +16,6 @@ namespace Foundation.Sdk.Services
     /// </summary>
     public sealed class HttpStorageRepository : IStorageRepository
     {
-        private readonly Regex _regexFieldName = new Regex(@"^[a-zA-Z0-9]*$");
-        private readonly Regex _regexHostName = new Regex(@"^[a-zA-Z0-9:\.\-/]*$");
         private readonly HttpClient _client = null;
         private readonly ILogger<HttpStorageRepository> _logger;
         private string Drawer { get; } = string.Empty;
@@ -68,7 +66,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all drawers failed");
-                throw ex;
+                throw;
             }
         }
 
@@ -90,7 +88,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Create drawer failed on {_client.BaseAddress}/{Drawer}");
-                throw ex;
+                throw;
             }
         }
 
@@ -112,7 +110,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete drawer failed on {_client.BaseAddress}/{Drawer}");
-                throw ex;
+                throw;
             }
         }
 
@@ -134,7 +132,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get drawer failed on {_client.BaseAddress}/{Drawer}");
-                throw ex;
+                throw;
             }
         }
 
@@ -156,7 +154,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all nodes on drawer failed on {_client.BaseAddress}/{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -178,7 +176,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get node failed");
-                throw ex;
+                throw;
             }
         }
 
@@ -199,7 +197,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.STORAGE_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get failed on {url}");
-                throw ex;
+                throw;
             }
         }
 

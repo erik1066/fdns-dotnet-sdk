@@ -238,7 +238,15 @@ namespace Foundation.Sdk.Tests
             IObjectService service = new MongoService(_fixture.MongoClient, _fixture.Logger);
             var collectionName = "historicalbooks";
 
-            var findResult = await service.FindAsync("bookstore", collectionName, findExpression, start, limit, "title", ListSortDirection.Ascending);
+            var findCriteria = new FindCriteria()
+            {
+                Start = start,
+                Limit = limit,
+                SortFieldName = "title",
+                SortDirection = System.ComponentModel.ListSortDirection.Ascending
+            };
+
+            var findResult = await service.FindAsync("bookstore", collectionName, findExpression, findCriteria);
             Assert.Equal(200, findResult.Status);
 
             SearchResults results = findResult.Value;
@@ -269,7 +277,14 @@ namespace Foundation.Sdk.Tests
             IObjectService service = new MongoService(_fixture.MongoClient, _fixture.Logger);
             var collectionName = "historicalbooks";
 
-            var searchResult = await service.SearchAsync("bookstore", collectionName, qs, 0, -1, "title");
+            var findCriteria = new FindCriteria()
+            {
+                Start = 0,
+                Limit = -1,
+                SortFieldName = "title"
+            };
+
+            var searchResult = await service.SearchAsync("bookstore", collectionName, qs, findCriteria);
             Assert.Equal(200, searchResult.Status);
             Assert.Equal(expectedCount, searchResult.Value.Items.Count);
         }

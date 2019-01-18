@@ -73,7 +73,15 @@ namespace Foundation.Sdk.Tests
         {
             var repo = new HttpObjectService("unittests", _objectFixture.ClientFactory, _objectFixture.Logger);
 
-            var findTask = repo.FindAsync("bookstore", "customer", findExpression: string.Empty, start: 0, limit: -1, sortFieldName: string.Empty, sortDirection: System.ComponentModel.ListSortDirection.Descending);
+            var findCriteria = new FindCriteria()
+            {
+                Start = 0,
+                Limit = -1,
+                SortFieldName = string.Empty,
+                SortDirection = System.ComponentModel.ListSortDirection.Descending
+            };
+
+            var findTask = repo.FindAsync("bookstore", "customer", findExpression: string.Empty, findCriteria: findCriteria);
             ServiceResult<SearchResults> result = findTask.Result;
             SearchResults searchResults = result.Value;
             Assert.Equal((int)HttpStatusCode.OK, result.Status);

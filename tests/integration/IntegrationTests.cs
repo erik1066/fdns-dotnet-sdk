@@ -419,9 +419,17 @@ namespace Foundation.Sdk.IntegrationTests
                                         expectedTitles.Add(title);
                                     }
 
+                                    var findCriteria = new FindCriteria()
+                                    {
+                                        Start = int.Parse(start),
+                                        Limit = int.Parse(limit),
+                                        SortFieldName = "title",
+                                        SortDirection = System.ComponentModel.ListSortDirection.Descending
+                                    };
+
                                     var findResult = testType == "find" ? 
-                                        service.FindAsync(DB_NAME, GetCollectionName(service), expression, int.Parse(start), int.Parse(limit), "title", System.ComponentModel.ListSortDirection.Descending, null).Result :
-                                        service.SearchAsync(DB_NAME, GetCollectionName(service), expression, int.Parse(start), int.Parse(limit), "title", System.ComponentModel.ListSortDirection.Descending, null).Result;
+                                        service.FindAsync(DB_NAME, GetCollectionName(service), expression, findCriteria, null).Result :
+                                        service.SearchAsync(DB_NAME, GetCollectionName(service), expression, findCriteria, null).Result;
 
                                     Assert.Equal(expectedStatus, findResult.Status.ToString());
 

@@ -16,10 +16,6 @@ namespace Foundation.Sdk.Services
     /// </summary>
     public sealed class HttpIndexingService : IIndexingService
     {
-        private readonly Regex _regexHostName = new Regex(@"^[a-zA-Z0-9:\.\-/]*$");
-        private readonly Regex _regexCollectionName = new Regex(@"^[a-zA-Z0-9s]*$");
-
-        private const string MEDIA_TYPE = "application/json";
         private readonly HttpClient _client = null;
         private readonly ILogger<HttpIndexingService> _logger = null;
         private JsonSerializerSettings JsonSerializerSettings { get; }
@@ -73,7 +69,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -102,7 +98,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Create config failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -130,7 +126,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Register config failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -158,7 +154,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete config failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -187,7 +183,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Index one object failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -215,7 +211,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Index all objects failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -245,7 +241,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Index many objects failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -274,7 +270,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get one object failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -307,7 +303,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.INDEXING_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get one object failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 

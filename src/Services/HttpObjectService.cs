@@ -20,7 +20,6 @@ namespace Foundation.Sdk.Services
     public sealed class HttpObjectService : IObjectService
     {
         #region Members
-        private readonly Regex _regexHostName = new Regex(@"^[a-zA-Z0-9:\.\-/]*$");
         private readonly Regex _regexCollectionName = new Regex(@"^[a-zA-Z0-9\.]*$");
         private readonly HttpClient _client = null;
         private readonly ILogger<HttpObjectService> _logger;
@@ -99,7 +98,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -121,7 +120,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get all failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -131,31 +130,13 @@ namespace Foundation.Sdk.Services
         /// <param name="databaseName">Name of the database to use for this operation</param>
         /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="findExpression">The MongoDB-style find syntax</param>
-        /// <param name="start">The index within the find results at which to start filtering</param>
-        /// <param name="limit">The number of items within the find results to limit the result set to</param>
-        /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
-        /// <param name="sortDirection">The sort direction</param>
+        /// <param name="findCriteria">The inputs for a find or search operation</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the find criteria</returns>
-        public async Task<ServiceResult<SearchResults>> FindAsync(string databaseName, string collectionName, string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults>> FindAsync(string databaseName, string collectionName, string findExpression, FindCriteria findCriteria, Dictionary<string, string> headers = null)
         {
-            #region Input Validation
-            if (start < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(start));
-            }
-            if (limit < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(limit));
-            }
-            if (!_regexCollectionName.IsMatch(sortFieldName))
-            {
-                throw new ArgumentException(nameof(sortFieldName));
-            }
-            #endregion // Input Validation
-
-            int sort = sortDirection == ListSortDirection.Descending ? 1 : -1;
-            var url = $"{GetStandardCollectionUrl(databaseName, collectionName)}/find?from={start}&size={limit}&sort={sortFieldName}&order={sort}";
+            int sort = findCriteria.GetNumericSortDirection();
+            var url = $"{GetStandardCollectionUrl(databaseName, collectionName)}/find?from={findCriteria.Start}&size={findCriteria.Limit}&sort={findCriteria.SortFieldName}&order={sort}";
 
             try
             {
@@ -164,7 +145,7 @@ namespace Foundation.Sdk.Services
                 HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_TEXT_PLAIN, headers, findExpression);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
-                    result = await Common.GetHttpResultAsServiceResultOfSearchResultsAsync(response, Common.OBJECT_SERVICE_NAME, url, headers, start);
+                    result = await Common.GetHttpResultAsServiceResultOfSearchResultsAsync(response, Common.OBJECT_SERVICE_NAME, url, headers, findCriteria.Start);
                 }
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Find completed on {_client.BaseAddress}{url}");
                 return result;
@@ -172,7 +153,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Find failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -182,16 +163,13 @@ namespace Foundation.Sdk.Services
         /// <param name="databaseName">Name of the database to use for this operation</param>
         /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="searchExpression">The Google-like query syntax</param>
-        /// <param name="start">The index within the find results at which to start filtering</param>
-        /// <param name="limit">The number of items within the find results to limit the result set to</param>
-        /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
-        /// <param name="sortDirection">The sort direction</param>
+        /// <param name="findCriteria">The inputs for a find or search operation</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the search criteria</returns>
-        public async Task<ServiceResult<SearchResults>> SearchAsync(string databaseName, string collectionName, string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults>> SearchAsync(string databaseName, string collectionName, string searchExpression, FindCriteria findCriteria, Dictionary<string, string> headers = null)
         {
             string convertedExpression = SearchStringConverter.BuildQuery(searchExpression);
-            return await FindAsync(databaseName: databaseName, collectionName: collectionName, findExpression: convertedExpression, start: start, limit: limit, sortFieldName: sortFieldName, sortDirection: sortDirection, headers: headers);
+            return await FindAsync(databaseName: databaseName, collectionName: collectionName, findExpression: convertedExpression, findCriteria: findCriteria, headers: headers);
         }
 
         /// <summary>
@@ -234,7 +212,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Update failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -243,10 +221,10 @@ namespace Foundation.Sdk.Services
         /// </summary>
         /// <param name="databaseName">Name of the database to use for this operation</param>
         /// <param name="collectionName">Name of the collection to use for this operation</param>
-        /// <param name="payload">The search payload in MongoDB find syntax format; for more information see https://docs.mongodb.com/manual/reference/method/db.collection.find/</param>
+        /// <param name="findExpression">The search payload in MongoDB find syntax format; for more information see https://docs.mongodb.com/manual/reference/method/db.collection.find/</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of integer</returns>
-        public async Task<ServiceResult<long>> CountAsync(string databaseName, string collectionName, string payload, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<long>> CountAsync(string databaseName, string collectionName, string findExpression, Dictionary<string, string> headers = null)
         {
             try
             {
@@ -254,7 +232,7 @@ namespace Foundation.Sdk.Services
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<string> result = null;
 
-                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_TEXT_PLAIN, headers, payload);
+                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_TEXT_PLAIN, headers, findExpression);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<string>(response, Common.OBJECT_SERVICE_NAME, url, headers);
@@ -263,14 +241,14 @@ namespace Foundation.Sdk.Services
                 var dictionary = JsonConvert.DeserializeObject<System.Collections.Generic.Dictionary<string, string>>(result.Value);
                 var kv = dictionary.FirstOrDefault(k => k.Key.Equals("count", StringComparison.OrdinalIgnoreCase));
                 long.TryParse(kv.Value, out long count);
-                var typedResult = new ServiceResult<long>(value: count, status: (int)result.Status, correlationId: Common.GetCorrelationIdFromHeaders(headers)) { ServiceName = Common.OBJECT_SERVICE_NAME };
+                var typedResult = new ServiceResult<long>(value: count, status: result.Status, correlationId: Common.GetCorrelationIdFromHeaders(headers)) { ServiceName = Common.OBJECT_SERVICE_NAME };
                 _logger.LogInformation($"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get count completed on {_client.BaseAddress}");
                 return typedResult;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get count failed on {_client.BaseAddress}");
-                throw ex;
+                throw;
             }
         }
 
@@ -301,7 +279,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -362,7 +340,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Insert failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -395,7 +373,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Insert failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -429,7 +407,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Aggregate failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }            
         }
 
@@ -459,7 +437,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Delete collection failed on {_client.BaseAddress}");
-                throw ex;
+                throw;
             }
         }
 
@@ -469,10 +447,10 @@ namespace Foundation.Sdk.Services
         /// <param name="databaseName">Name of the database to use for this operation</param>
         /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="fieldName">Name of the field to use for determining distinctness</param>
-        /// <param name="payload">The search payload in MongoDB find syntax format; for more information see https://docs.mongodb.com/manual/reference/method/db.collection.find/</param>
+        /// <param name="findExpression">The search payload in MongoDB find syntax format; for more information see https://docs.mongodb.com/manual/reference/method/db.collection.find/</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>ServiceResult of strings</returns>
-        public async Task<ServiceResult<List<string>>> GetDistinctAsync(string databaseName, string collectionName, string fieldName, string payload, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<List<string>>> GetDistinctAsync(string databaseName, string collectionName, string fieldName, string findExpression, Dictionary<string, string> headers = null)
         {
             #region Input Validation
             if (!_regexCollectionName.IsMatch(fieldName))
@@ -486,7 +464,7 @@ namespace Foundation.Sdk.Services
                 var url = $"{GetStandardUrl(databaseName, collectionName, "distinct")}/{fieldName}";
                 headers = Common.NormalizeHeaders(headers);
                 ServiceResult<List<string>> result = null;
-                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_TEXT_PLAIN, headers, payload);
+                HttpRequestMessage requestMessage = BuildHttpRequestMessage(HttpMethod.Post, url, Common.MEDIA_TYPE_TEXT_PLAIN, headers, findExpression);
                 using (HttpResponseMessage response = await _client.SendAsync(requestMessage))
                 {
                     result = await Common.GetHttpResultAsServiceResultAsync<List<string>>(response, Common.OBJECT_SERVICE_NAME, url, headers);
@@ -497,7 +475,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get distinct failed on {_client.BaseAddress} with field={fieldName}");
-                throw ex;
+                throw;
             }
         }
 
@@ -536,9 +514,9 @@ namespace Foundation.Sdk.Services
             if (values.ContainsKey(ID_PROPERTY_NAME))
             {
                 object idValue = values[ID_PROPERTY_NAME];
-                if (idValue.GetType() != typeof(string) && idValue.GetType() != typeof(object) && idValue.GetType() != typeof(Newtonsoft.Json.Linq.JObject))
+                if ( !(idValue is string) && idValue.GetType() != typeof(object) && idValue.GetType() != typeof(Newtonsoft.Json.Linq.JObject))
                 {
-                    throw new InvalidOperationException("_id value must be a string or an OID");                    
+                    throw new InvalidOperationException("_id value must be a string or an OID");
                 }
 
                 if (id != null)
@@ -553,12 +531,6 @@ namespace Foundation.Sdk.Services
 
             string checkedJson = Newtonsoft.Json.JsonConvert.SerializeObject(values, Formatting.Indented);
             return checkedJson;
-        }
-
-        private (bool, ObjectId) IsObjectId(string id)
-        {
-            bool isObjectId = ObjectId.TryParse(id.ToString(), out ObjectId objectId);
-            return (isObjectId, objectId);
         }
 
         private ServiceResult<string> GetBadRequestResult(string correlationId, string message = "") => new ServiceResult<string>(

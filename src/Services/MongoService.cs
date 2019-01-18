@@ -69,7 +69,7 @@ namespace Foundation.Sdk.Services
                 var database = GetDatabase(databaseName);
                 var collection = GetCollection(database, collectionName);
                 (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());
-                BsonDocument findDocument = isObjectId == true ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
+                BsonDocument findDocument = isObjectId ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
                 var json = StringifyDocument(await collection.Find(findDocument).FirstOrDefaultAsync());
 
                 var result = new ServiceResult<string>(
@@ -101,7 +101,7 @@ namespace Foundation.Sdk.Services
                 var database = GetDatabase(databaseName);
                 var collection = GetCollection(database, collectionName);
 
-                if (await DoesCollectionExist(databaseName, collectionName) == false) 
+                if (!await DoesCollectionExist(databaseName, collectionName)) 
                 {
                     _logger.LogInformation($"{_serviceName}: Get all failed on {databaseName}/{collectionName}: The collection does not exist");
                     var notFoundResult = GetNotFoundResult(correlationId: Common.GetCorrelationIdFromHeaders(headers), message: $"Collection '{collectionName}' does not exist in database '{databaseName}'");
@@ -227,7 +227,7 @@ namespace Foundation.Sdk.Services
                 var collection = GetCollection(database, collectionName);
                 var document = BsonDocument.Parse(entity);
                 (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());
-                BsonDocument findDocument = isObjectId == true ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
+                BsonDocument findDocument = isObjectId ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
                 var replaceOneResult = await collection.ReplaceOneAsync(findDocument, document);
 
                 if (replaceOneResult.IsAcknowledged && replaceOneResult.ModifiedCount == 1)
@@ -269,7 +269,7 @@ namespace Foundation.Sdk.Services
                 var database = GetDatabase(databaseName);
                 var collection = GetCollection(database, collectionName);
                 (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());                
-                BsonDocument findDocument = isObjectId == true ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
+                BsonDocument findDocument = isObjectId ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
                 var deleteOneResult = await collection.DeleteOneAsync(findDocument);
 
                 if (deleteOneResult.IsAcknowledged && deleteOneResult.DeletedCount == 1)
@@ -304,13 +304,10 @@ namespace Foundation.Sdk.Services
         /// <param name="databaseName">Name of the database to use for this operation</param>
         /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="findExpression">The MongoDB-style find syntax</param>
-        /// <param name="start">The index within the find results at which to start filtering</param>
-        /// <param name="limit">The number of items within the find results to limit the result set to</param>
-        /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
-        /// <param name="sortDirection">The sort direction</param>
+        /// <param name="findCriteria">The inputs for a find or search operation</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the find criteria</returns>
-        public async Task<ServiceResult<SearchResults>> FindAsync(string databaseName, string collectionName, string findExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults>> FindAsync(string databaseName, string collectionName, string findExpression, FindCriteria findCriteria, Dictionary<string, string> headers = null)
         {
             try
             {
@@ -318,13 +315,9 @@ namespace Foundation.Sdk.Services
                 var collection = GetCollection(database, collectionName);
 
                 var regexFind = GetRegularExpressionQuery(
-                    database: database, 
                     collection: collection, 
                     findExpression: findExpression, 
-                    start: start, 
-                    limit: limit, 
-                    sortFieldName: sortFieldName, 
-                    sortDirection: sortDirection);
+                    findCriteria: findCriteria);
 
                 var document = await regexFind.ToListAsync();
                 var jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict, Indent = false, NewLineChars = string.Empty };
@@ -341,7 +334,7 @@ namespace Foundation.Sdk.Services
                 SearchResults searchResults = new SearchResults()
                 {
                     Items = items,
-                    From = start,
+                    From = findCriteria.Start,
                     Total = items.Count
                 };
 
@@ -355,7 +348,7 @@ namespace Foundation.Sdk.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{_serviceName}: Find failed on {databaseName}/{collectionName} with arguments start={start}, limit={limit}, sortFieldName={sortFieldName}");
+                _logger.LogError(ex, $"{_serviceName}: Find failed on {databaseName}/{collectionName} with arguments start={findCriteria.Start}, limit={findCriteria.Limit}, sortFieldName={findCriteria.SortFieldName}");
                 throw;
             }
         }
@@ -367,26 +360,17 @@ namespace Foundation.Sdk.Services
         /// <param name="databaseName">Name of the database to use for this operation</param>
         /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="searchExpression">The Google-like query syntax</param>
-        /// <param name="start">The index within the find results at which to start filtering</param>
-        /// <param name="limit">The number of items within the find results to limit the result set to</param>
-        /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
-        /// <param name="sortDirection">The sort direction</param>
+        /// <param name="findCriteria">The inputs for a find or search operation</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
         /// <returns>A collection of objects that match the search criteria</returns>
-        public async Task<ServiceResult<SearchResults>> SearchAsync(string databaseName, string collectionName, string searchExpression, int start, int limit, string sortFieldName, ListSortDirection sortDirection = ListSortDirection.Descending, Dictionary<string, string> headers = null)
+        public async Task<ServiceResult<SearchResults>> SearchAsync(string databaseName, string collectionName, string searchExpression, FindCriteria findCriteria, Dictionary<string, string> headers = null)
         {
-            var database = GetDatabase(databaseName);
-            var collection = GetCollection(database, collectionName);
-
             string convertedExpression = SearchStringConverter.BuildQuery(searchExpression);
             return await FindAsync(
                 databaseName: databaseName, 
                 collectionName: collectionName, 
                 findExpression: convertedExpression, 
-                start: start, 
-                limit: limit, 
-                sortFieldName: sortFieldName, 
-                sortDirection: sortDirection, 
+                findCriteria: findCriteria,
                 headers: headers);
         }
 
@@ -400,7 +384,6 @@ namespace Foundation.Sdk.Services
         public async Task<ServiceResult<int>> DeleteCollectionAsync(string databaseName, string collectionName, Dictionary<string, string> headers = null)
         {
             var database = GetDatabase(databaseName);
-            var collection = GetCollection(database, collectionName);
 
             bool collectionExists = await DoesCollectionExist(databaseName, collectionName);
 
@@ -476,7 +459,7 @@ namespace Foundation.Sdk.Services
                 var database = GetDatabase(databaseName);
                 var collection = GetCollection(database, collectionName);
 
-                var regexFind = GetRegularExpressionQuery(database, collection, findExpression, 0, Int32.MaxValue, string.Empty, ListSortDirection.Ascending);
+                var regexFind = GetRegularExpressionQuery(collection, findExpression, new FindCriteria());
                 var documentCount = await regexFind.CountDocumentsAsync();
                 return new ServiceResult<long>(
                     value: documentCount, 
@@ -610,7 +593,6 @@ namespace Foundation.Sdk.Services
         private async Task<bool> DoesCollectionExist(string databaseName, string collectionName)
         {
             var database = GetDatabase(databaseName);
-            var collection = GetCollection(database, collectionName);
 
             var filter = new BsonDocument("name", collectionName);
             var collectionCursor = await database.ListCollectionsAsync(new ListCollectionsOptions {Filter = filter});
@@ -639,8 +621,6 @@ namespace Foundation.Sdk.Services
 
         private string StringifyDocument(BsonDocument document) => document == null ? null : document.ToJson(_jsonWriterSettings);
 
-        private string StringifyDocuments(List<BsonDocument> documents) => documents.ToJson(_jsonWriterSettings);
-
         private (bool, ObjectId) IsObjectId(string id)
         {
             bool isObjectId = ObjectId.TryParse(id.ToString(), out ObjectId objectId);
@@ -648,15 +628,12 @@ namespace Foundation.Sdk.Services
         }
 
         private IFindFluent<BsonDocument, BsonDocument> GetRegularExpressionQuery(
-            IMongoDatabase database, 
             IMongoCollection<MongoDB.Bson.BsonDocument> collection, 
-            string findExpression, 
-            int start, 
-            int limit, 
-            string sortFieldName, 
-            ListSortDirection sortDirection)
+            string findExpression,
+            FindCriteria findCriteria)
         {
-            if (limit <= -1)
+            var limit = -1;
+            if (findCriteria.Limit <= -1)
             {
                 limit = Int32.MaxValue;
             }
@@ -664,25 +641,23 @@ namespace Foundation.Sdk.Services
             BsonDocument bsonDocument = BsonDocument.Parse(findExpression);
             var regexFind = collection
                 .Find(bsonDocument)
-                .Skip(start)
+                .Skip(findCriteria.Start)
                 .Limit(limit);
 
-            if (!string.IsNullOrEmpty(sortFieldName))
+            if (!string.IsNullOrEmpty(findCriteria.SortFieldName))
             {
-                if (sortDirection == ListSortDirection.Ascending)
+                if (findCriteria.SortDirection == ListSortDirection.Ascending)
                 {
-                    regexFind.SortBy(bson => bson[sortFieldName]);
+                    regexFind.SortBy(bson => bson[findCriteria.SortFieldName]);
                 }
                 else
                 {
-                    regexFind.SortByDescending(bson => bson[sortFieldName]);
+                    regexFind.SortByDescending(bson => bson[findCriteria.SortFieldName]);
                 }
             }
 
             return regexFind;
         }
-
-        private string SerializeEntity(string entity) => entity.ToString();
 
         private string SerializeEntities(IEnumerable<string> entity) => Newtonsoft.Json.JsonConvert.SerializeObject(entity, _jsonSerializersettings);
 

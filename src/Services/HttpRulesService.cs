@@ -19,10 +19,6 @@ namespace Foundation.Sdk.Services
     /// </summary>
     public sealed class HttpRulesService : IRulesService
     {
-        private readonly Regex _regexHostName = new Regex(@"^[a-zA-Z0-9:\.\-/]*$");
-        private readonly Regex _regexCollectionName = new Regex(@"^[a-zA-Z0-9s]*$");
-
-        private const string MEDIA_TYPE = "application/json";
         private readonly HttpClient _client = null;
         private readonly ILogger<HttpRulesService> _logger = null;
         private JsonSerializerSettings JsonSerializerSettings { get; }
@@ -76,7 +72,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Get profile on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -105,7 +101,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Create profile failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -134,7 +130,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Upsert profile failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
@@ -164,7 +160,7 @@ namespace Foundation.Sdk.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.RULES_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Validate failed on {_client.BaseAddress}{url}");
-                throw ex;
+                throw;
             }
         }
 
