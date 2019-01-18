@@ -113,7 +113,7 @@ namespace Foundation.Sdk
         {
             string message = string.Empty;
 
-            if (response.IsSuccessStatusCode == false && !string.IsNullOrEmpty(json))
+            if (!response.IsSuccessStatusCode && !string.IsNullOrEmpty(json))
             {
                 var errorPayload = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
                 if (errorPayload.ContainsKey("message"))
@@ -125,7 +125,17 @@ namespace Foundation.Sdk
             return message;
         }
 
-        public static string GetCorrelationIdFromHeaders(Dictionary<string, string> headers) => headers != null ? (headers.ContainsKey(CORRELATION_ID_HEADER) ? headers[CORRELATION_ID_HEADER] : string.Empty) : string.Empty;
+        public static string GetCorrelationIdFromHeaders(Dictionary<string, string> headers) 
+        {
+            if (headers != null && headers.ContainsKey(CORRELATION_ID_HEADER))
+            {
+               return headers[CORRELATION_ID_HEADER];
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
 
         public static void AddHttpRequestHeaders(HttpRequestMessage requestMessage, string senderName, string destinationName, Dictionary<string, string> headers)
         {
