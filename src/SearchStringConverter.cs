@@ -109,12 +109,16 @@ namespace Foundation.Sdk
             return terms;
         }
 
-        public static void BuildQueryNotEqualTo(JObject json, string term)
+        private static void BuildQueryNotEqualTo(JObject json, string term)
         {
             (string fieldName, string rawValue) = Split(term, "!:");
             if (IsNumber(rawValue))
             {
                 AddNumberComparisonProperty(json, fieldName, rawValue, "ne");
+            }
+            else if (IsBoolean(rawValue))
+            {                
+                json.Add(fieldName, new JObject(BuildAndMergeComparison("ne", fieldName, bool.Parse(rawValue), json)));
             }
             else
             {
