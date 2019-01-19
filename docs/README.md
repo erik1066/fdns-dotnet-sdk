@@ -20,9 +20,23 @@ See [Package references in project files](https://docs.microsoft.com/en-us/nuget
 
 To add a NuGet package in **Visual Studio**, see [Quickstart: Install and use a package in Visual Studio](https://docs.microsoft.com/en-us/nuget/quickstart/install-and-use-a-package-in-visual-studio).
 
-## SDK Quick-start Guides:
+## SDK quick-start guides:
 
 * [How to run the Foundation Services for local development](guide00-starting-fdns-microservices.md)
 * [Interacting with the FDNS Object microservice](guide01-using-fdns-object-microservice.md)
 * [Interacting with the FDNS Storage microservice](guide02-using-fdns-storage-microservice.md)
 * [Interacting with the FDNS Indexing microservice](guide03-using-fdns-indexing-microservice.md)
+
+## Analyzing code for quality and vulnerabilities
+
+Developers can easily run [SonarQube](https://www.sonarqube.org/) on `fdns-dotnet-sdk` for code quality and security vulnerability analysis:
+
+1. Open a terminal window
+1. `cd` to the `fdns-dotnet-sdk` folder
+1. `make sonar-up`
+1. `make sonar-run`
+1. Wait until the analysis is finished
+1. Open a web browser and point to http://localhost:9000/dashboard?id=fdns-dotnet-sdk
+1. `make sonar-down`
+
+
