@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 
-using Foundation.Sdk;
+using Foundation.Sdk.Converters;
 
 namespace Foundation.Sdk.Tests
 {

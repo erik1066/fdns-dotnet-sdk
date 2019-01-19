@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -10,16 +9,9 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
 #pragma warning disable 1591 // disables the warnings about missing Xml code comments
     public class JsonRawOutputFormatter : TextOutputFormatter
     {
-        public JsonRawOutputFormatter() : this(new List<string>() { "application/json" })
+        public JsonRawOutputFormatter()
         {
-        }
-
-        public JsonRawOutputFormatter(IEnumerable<string> supportedMediaTypes)
-        {
-            foreach (var supportedMediaType in supportedMediaTypes)
-            {
-                SupportedMediaTypes.Add(supportedMediaType);
-            }
+            SupportedMediaTypes.Add("application/json");
             SupportedEncodings.Add(Encoding.UTF8);
             SupportedEncodings.Add(Encoding.Unicode);
         }

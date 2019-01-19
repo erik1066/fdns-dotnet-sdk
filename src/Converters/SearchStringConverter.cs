@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
-namespace Foundation.Sdk
+namespace Foundation.Sdk.Converters
 {
 #pragma warning disable 1591 // disables the warnings about missing Xml code comments    
     public static class SearchStringConverter // converted to C# from https://github.com/CDCgov/fdns-ms-object/blob/master/src/main/java/gov/cdc/foundation/helper/QueryHelper.java

@@ -19,6 +19,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 
+using Foundation.Sdk.Converters;
+
 namespace Foundation.Sdk.Services
 {
     /// <summary>
