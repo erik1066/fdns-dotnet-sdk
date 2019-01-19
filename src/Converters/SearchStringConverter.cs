@@ -5,9 +5,80 @@ using Newtonsoft.Json.Linq;
 
 namespace Foundation.Sdk.Converters
 {
-#pragma warning disable 1591 // disables the warnings about missing Xml code comments    
+    /// <summary>
+    /// Converts a Google-like search syntax into MongoDB find syntax
+    /// </summary>
+    /// <remarks>
+    /// Converted to C# from https://github.com/CDCgov/fdns-ms-object/blob/master/src/main/java/gov/cdc/foundation/helper/QueryHelper.java
+    /// </remarks>
     public static class SearchStringConverter // converted to C# from https://github.com/CDCgov/fdns-ms-object/blob/master/src/main/java/gov/cdc/foundation/helper/QueryHelper.java
     {
+        /// <summary>
+        /// Builds the MongoDB find expression from a Google-like search query string
+        /// </summary>
+        /// <param name="qs">Google-like search query. Ex: pages>400 title:"The Red Badge of Courage"</param>
+        /// <returns>MongoDB find syntax. Ex: { pages: { $gt: 400 }, title:"The Red Badge of Courage" }</returns>
+	    public static string BuildFindExpressionFromQuery(string qs) 
+        {
+            if (string.IsNullOrEmpty(qs))
+            {
+                return string.Empty;
+            }
+
+		    JObject json = new JObject();
+            
+		    string[] terms = GetSearchTerms(qs); 
+
+            foreach (var term in terms)
+            {			
+                if (term.Contains(">=")) 
+                {
+                    (string fieldName, string rawValue) = Split(term, ">=");
+                    AddNumberComparisonProperty(json, fieldName, rawValue, "gte");
+                }
+                else if (term.Contains("<=")) 
+                {
+                    (string fieldName, string rawValue) = Split(term, "<=");
+                    AddNumberComparisonProperty(json, fieldName, rawValue, "lte");
+                }
+                else if (term.Contains(">")) 
+                {
+                    (string fieldName, string rawValue) = Split(term, ">");
+                    AddNumberComparisonProperty(json, fieldName, rawValue, "gt");
+                }
+                else if (term.Contains("<")) 
+                {
+                    (string fieldName, string rawValue) = Split(term, "<");
+                    AddNumberComparisonProperty(json, fieldName, rawValue, "lt");
+                }
+                else if (term.Contains("!:")) 
+                {
+                    BuildQueryNotEqualTo(json, term);
+                }
+                else if (term.Contains(":")) 
+                {
+                    (string fieldName, string rawValue) = Split(term, ":");
+                    
+                    // convert types
+                    if (IsNumber(rawValue))
+                    {
+                        json.Add(fieldName, new JValue(Double.Parse(rawValue)));                    
+                    }
+                    else if (IsBoolean(rawValue))
+                    {
+                        json.Add(fieldName, new JValue(bool.Parse(rawValue)));                    
+                    }
+                    else
+                    {
+                        string formattedRawValue = rawValue.Trim('"');
+                        json.Add(fieldName, new JValue(formattedRawValue));
+                    }
+                }
+            }
+
+            return json.ToString(Newtonsoft.Json.Formatting.None);
+        }
+        
         // check if a number
         private static bool IsNumber(string str) => System.Text.RegularExpressions.Regex.Match(str, "-?\\d+(\\.\\d+)?").Success;
 
@@ -126,68 +197,5 @@ namespace Foundation.Sdk.Converters
                 json.Add(fieldName, new JObject(BuildAndMergeComparison("ne", fieldName, formattedRawValue, json)));
             }
         }
-
-        // build the query for MongoDB
-	    public static string BuildQuery(string qs) 
-        {
-            if (string.IsNullOrEmpty(qs))
-            {
-                return string.Empty;
-            }
-
-		    JObject json = new JObject();
-            
-		    string[] terms = GetSearchTerms(qs); 
-
-            foreach (var term in terms)
-            {			
-                if (term.Contains(">=")) 
-                {
-                    (string fieldName, string rawValue) = Split(term, ">=");
-                    AddNumberComparisonProperty(json, fieldName, rawValue, "gte");
-                }
-                else if (term.Contains("<=")) 
-                {
-                    (string fieldName, string rawValue) = Split(term, "<=");
-                    AddNumberComparisonProperty(json, fieldName, rawValue, "lte");
-                }
-                else if (term.Contains(">")) 
-                {
-                    (string fieldName, string rawValue) = Split(term, ">");
-                    AddNumberComparisonProperty(json, fieldName, rawValue, "gt");
-                }
-                else if (term.Contains("<")) 
-                {
-                    (string fieldName, string rawValue) = Split(term, "<");
-                    AddNumberComparisonProperty(json, fieldName, rawValue, "lt");
-                }
-                else if (term.Contains("!:")) 
-                {
-                    BuildQueryNotEqualTo(json, term);
-                }
-                else if (term.Contains(":")) 
-                {
-                    (string fieldName, string rawValue) = Split(term, ":");
-                    
-                    // convert types
-                    if (IsNumber(rawValue))
-                    {
-                        json.Add(fieldName, new JValue(Double.Parse(rawValue)));                    
-                    }
-                    else if (IsBoolean(rawValue))
-                    {
-                        json.Add(fieldName, new JValue(bool.Parse(rawValue)));                    
-                    }
-                    else
-                    {
-                        string formattedRawValue = rawValue.Trim('"');
-                        json.Add(fieldName, new JValue(formattedRawValue));
-                    }
-                }
-            }
-
-            return json.ToString(Newtonsoft.Json.Formatting.None);
-        }
     }
-#pragma warning restore 1591
 }

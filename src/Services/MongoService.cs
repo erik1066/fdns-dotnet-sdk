@@ -367,7 +367,7 @@ namespace Foundation.Sdk.Services
         /// <returns>A collection of objects that match the search criteria</returns>
         public async Task<ServiceResult<SearchResults>> SearchAsync(string databaseName, string collectionName, string searchExpression, FindCriteria findCriteria, Dictionary<string, string> headers = null)
         {
-            string convertedExpression = SearchStringConverter.BuildQuery(searchExpression);
+            string convertedExpression = SearchStringConverter.BuildFindExpressionFromQuery(searchExpression);
             return await FindAsync(
                 databaseName: databaseName, 
                 collectionName: collectionName, 

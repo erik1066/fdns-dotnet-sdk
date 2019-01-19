@@ -25,7 +25,7 @@ namespace Foundation.Sdk.Tests
         [InlineData("pages:400 authorCount>1 chapters<=50", "{\"pages\":400.0,\"authorCount\":{\"$gt\":1.0},\"chapters\":{\"$lte\":50.0}}")]
         public void ConvertNumber(string queryString, string expectedFindExpression)
         {
-            string actualFindExpression = SearchStringConverter.BuildQuery(queryString);
+            string actualFindExpression = SearchStringConverter.BuildFindExpressionFromQuery(queryString);
 
             Assert.Equal(expectedFindExpression, actualFindExpression);
         }
@@ -37,7 +37,7 @@ namespace Foundation.Sdk.Tests
         [InlineData("title:\"Engineering\" author:\"John Doe\"", "{\"title\":\"Engineering\",\"author\":\"John Doe\"}")]
         public void ConvertText(string queryString, string expectedFindExpression)
         {
-            string actualFindExpression = SearchStringConverter.BuildQuery(queryString);
+            string actualFindExpression = SearchStringConverter.BuildFindExpressionFromQuery(queryString);
 
             Assert.Equal(expectedFindExpression, actualFindExpression);
         }
@@ -49,7 +49,7 @@ namespace Foundation.Sdk.Tests
         [InlineData("isValid!:false", "{\"isValid\":{\"$ne\":false}}")]
         public void ConvertBoolean(string queryString, string expectedFindExpression)
         {
-            string actualFindExpression = SearchStringConverter.BuildQuery(queryString);
+            string actualFindExpression = SearchStringConverter.BuildFindExpressionFromQuery(queryString);
 
             Assert.Equal(expectedFindExpression, actualFindExpression);
         }
@@ -60,7 +60,7 @@ namespace Foundation.Sdk.Tests
         public void ConvertNumber_Fail(string queryString)
         {
             var expectedFindExpression = "{}";
-            string actualFindExpression = SearchStringConverter.BuildQuery(queryString);
+            string actualFindExpression = SearchStringConverter.BuildFindExpressionFromQuery(queryString);
 
             Assert.Equal(expectedFindExpression, actualFindExpression);
         }
