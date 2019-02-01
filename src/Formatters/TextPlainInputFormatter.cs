@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Formatters;
 namespace Microsoft.AspNetCore.Mvc.Formatters
 {
 #pragma warning disable 1591 // disables the warnings about missing Xml code comments
-    public class TextPlainInputFormatter : TextInputFormatter
+    public sealed class TextPlainInputFormatter : TextInputFormatter
     {
         public TextPlainInputFormatter()
         {

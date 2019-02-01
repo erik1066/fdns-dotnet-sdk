@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Formatters;
 namespace Microsoft.AspNetCore.Mvc.Formatters
 {
 #pragma warning disable 1591 // disables the warnings about missing Xml code comments
-    public class JsonRawInputFormatter : TextInputFormatter
+    public sealed class JsonRawInputFormatter : TextInputFormatter
     {
         public JsonRawInputFormatter()
         {
