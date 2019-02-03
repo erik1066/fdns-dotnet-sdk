@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace Foundation.Sdk
 {
@@ -66,6 +67,12 @@ namespace Foundation.Sdk
                 Title = GetTitleForHttpStatus(status),
                 Type = GetTypeForHttpStatus(status)
             };
+        }
+
+        public TValue GetTypedItem<TValue>() where TValue : class 
+        {            
+            var item = JsonConvert.DeserializeObject<TValue>(Value.ToString());
+            return item;
         }
 
         private static string GetTitleForHttpStatus(int status)

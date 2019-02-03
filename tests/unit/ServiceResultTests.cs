@@ -80,5 +80,21 @@ namespace Foundation.Sdk.Tests
                 var serviceResult = new ServiceResult<string>("value", 200, "3kfnv", null, "message");
             });
         }
+
+        [Fact]
+        public void Get_Typed_Result()
+        {
+            var serviceResult = new ServiceResult<string>("{ \"name\" : \"John\", \"age\" : 15 }", 200, "3kfnv", "object", "message");
+            var foo = serviceResult.GetTypedItem<Foo>();
+
+            Assert.True(foo.Name.Equals("John"));
+            Assert.True(foo.Age.Equals(15));
+        }
+
+        private class Foo
+        {
+            public string Name { get; set; }
+            public int Age { get; set; }
+        }
     }
 }
