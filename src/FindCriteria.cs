@@ -37,6 +37,11 @@ namespace Foundation.Sdk
         /// <summary>
         /// Constructor
         /// </summary>
+        public FindCriteria() { }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
         /// <param name="start">The index within the find results at which to start filtering</param>
         /// <param name="limit">The number of items within the find results to limit the result set to</param>
         /// <param name="sortFieldName">The Json property name of the object on which to sort</param>
