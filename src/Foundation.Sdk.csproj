@@ -18,8 +18,8 @@
     <PackageProjectUrl>https://github.com/erik1066/fdns-dotnet-sdk</PackageProjectUrl>
     <RepositoryUrl>https://github.com/erik1066/fdns-dotnet-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageVersion>0.0.8</PackageVersion>
-    <Version>0.0.8</Version>
+    <PackageVersion>0.0.9</PackageVersion>
+    <Version>0.0.9</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
