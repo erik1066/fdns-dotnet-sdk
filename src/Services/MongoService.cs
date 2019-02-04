@@ -639,6 +639,10 @@ namespace Foundation.Sdk.Services
             {
                 limit = Int32.MaxValue;
             }
+            else
+            {
+                limit = findCriteria.Limit;
+            }
 
             BsonDocument bsonDocument = BsonDocument.Parse(findExpression);
             var regexFind = collection
