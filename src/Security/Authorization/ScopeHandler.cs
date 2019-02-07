@@ -59,6 +59,56 @@ namespace Foundation.Sdk.Security
             {
                 return true;
             }
+            else
+            {
+                bool outerValid = false;
+
+                foreach (var tokenScope in tokenScopes.Where(t => t.Contains("*")))
+                {
+                    string [] tokenScopeParts = tokenScope.Split('.');
+                    string [] requiredScopeParts = requiredScope.Split('.');
+
+                    if (tokenScopeParts.Length != requiredScopeParts.Length)
+                    {
+                        // token lengths are different, it's not valid so let's skip it
+                        outerValid = false;
+                        continue;
+                    }
+
+                    bool innerValid = true;
+
+                    for (int i = 2; i < tokenScopeParts.Length; i++) // skip system and service names in token parts
+                    {
+                        var tokenScopePart = tokenScopeParts[i];
+                        var requiredScopePart = requiredScopeParts[i];
+
+                        if (tokenScopePart.Equals(requiredScopePart) || tokenScopePart.Equals("*"))
+                        {
+                            innerValid = true;
+                        }
+                        else
+                        {
+                            innerValid = false; // part of the scope doesn't match, stop processing this scope
+                            break;
+                        }
+                    }
+
+                    if (!innerValid)
+                    {
+                        outerValid = false;
+                    }
+                    else
+                    {
+                        outerValid = true; // we found a match, so stop
+                        break;
+                    }
+                }
+
+                if (outerValid)
+                {
+                    return true;
+                }
+            }
             return false;
         }
 
