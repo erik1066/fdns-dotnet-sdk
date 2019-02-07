@@ -25,7 +25,6 @@ namespace Foundation.Sdk.Services
     public sealed class HttpObjectService : IObjectService
     {
         #region Members
-        private readonly Regex _regexCollectionName = new Regex(@"^[a-zA-Z0-9\.]*$");
         private readonly HttpClient _client = null;
         private readonly ILogger<HttpObjectService> _logger;
         private const string ID_PROPERTY_NAME = "_id";
@@ -35,17 +34,17 @@ namespace Foundation.Sdk.Services
         #endregion // Members
 
         /// <summary>
-        /// Constructor
+        /// Constructor for taking an HttpClient directly
         /// </summary>
         /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
-        /// <param name="clientFactory">The Http client factory to use for creating Http clients</param>
+        /// <param name="client">The Http client</param>
         /// <param name="logger">The logger to use</param>
-        public HttpObjectService(string appName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger)
+        public HttpObjectService(string appName, HttpClient client, ILogger<HttpObjectService> logger)
         {
             #region Input Validation
-            if (clientFactory == null)
+            if (client == null)
             {
-                throw new ArgumentNullException(nameof(clientFactory));
+                throw new ArgumentNullException(nameof(client));
             }
             if (logger == null)
             {
@@ -57,14 +56,27 @@ namespace Foundation.Sdk.Services
             }
             #endregion // Input Validation
 
-            _client = clientFactory.CreateClient($"{appName}-{Common.OBJECT_SERVICE_NAME}");
+            _client = client;
             _logger = logger;
             SendingServiceName = appName;
             JsonSerializerSettings = new JsonSerializerSettings() { Formatting = Formatting.None, NullValueHandling = NullValueHandling.Ignore, ContractResolver = new CamelCasePropertyNamesContractResolver() };
         }
 
         /// <summary>
-        /// Constructor
+        /// Constructor that takes an HttpClientFactory
+        /// </summary>
+        /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
+        /// <param name="clientFactory">The Http client factory to use for creating Http clients</param>
+        /// <param name="logger">The logger to use</param>
+        public HttpObjectService(string appName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger)
+            : this(
+                appName: appName, 
+                client: clientFactory.CreateClient($"{appName}-{Common.OBJECT_SERVICE_NAME}"), 
+                logger: logger)
+        { }
+
+        /// <summary>
+        /// Constructor that takes an HttpClientFactory and custom JsonSerializerSettings
         /// </summary>
         /// <param name="appName">Name of the service that is using this class to make requests to the Http Object service.</param>
         /// <param name="clientFactory">The Http client factory to use for creating Http clients</param>
@@ -457,13 +469,6 @@ namespace Foundation.Sdk.Services
         /// <returns>ServiceResult of strings</returns>
         public async Task<ServiceResult<List<string>>> GetDistinctAsync(string databaseName, string collectionName, string fieldName, string findExpression, Dictionary<string, string> headers = null)
         {
-            #region Input Validation
-            if (!_regexCollectionName.IsMatch(fieldName))
-            {
-                throw new ArgumentException(nameof(fieldName));
-            }
-            #endregion // Input Validation
-
             try
             {
                 var url = $"{GetStandardUrl(databaseName, collectionName, "distinct")}/{fieldName}";
