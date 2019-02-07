@@ -10,7 +10,7 @@ There are many tutorials that show how to create a basic .NET Core 2.x web appli
 
 ```xml
 <ItemGroup>
-    <PackageReference Include="Foundation.Sdk" Version="0.0.10" />
+    <PackageReference Include="Foundation.Sdk" Version="0.0.11" />
 </ItemGroup>
 ```
 
