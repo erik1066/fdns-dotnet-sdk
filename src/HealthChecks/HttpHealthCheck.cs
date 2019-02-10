@@ -102,23 +102,29 @@ namespace Foundation.Sdk.HealthChecks
                     sw.Stop();
                     var elapsed = sw.Elapsed.TotalMilliseconds.ToString("N0");
 
+                    var data = new Dictionary<string, object> 
+                    { 
+                        ["elapsed"] = elapsed,
+                        ["httpStatusCode"] = (int)status 
+                    };
+
                     if (!isSuccessCode)
                     {
                         checkResult = HealthCheckResult.Unhealthy(
-                            data: new Dictionary<string, object> { ["elapsed"] = elapsed },
-                            description: $"{_description} probe failed due to {status} HTTP response");
+                            data: data,
+                            description: $"{_description} probe failed: HTTP {status}");
                     }
                     else if (sw.Elapsed.TotalMilliseconds > _degradationThreshold)
                     {
                         checkResult = HealthCheckResult.Degraded(
-                            data: new Dictionary<string, object> { ["elapsed"] = elapsed },
-                            description: $"{_description} probe took more than {_degradationThreshold} milliseconds");
+                            data: data,
+                            description: $"{_description} probe took more than {_degradationThreshold} ms");
                     }
                     else 
                     {
                         checkResult = HealthCheckResult.Healthy(
-                            data: new Dictionary<string, object> { ["elapsed"] = elapsed },
-                            description: $"{_description} probe completed in {elapsed} milliseconds");
+                            data: data,
+                            description: $"{_description} probe completed in {elapsed} ms");
                     }
                 }
                 catch (Exception ex)
