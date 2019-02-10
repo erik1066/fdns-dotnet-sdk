@@ -95,7 +95,7 @@ namespace Foundation.Sdk.Services
         /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="id">The id of the object to retrieve. This parameter must match a property on the object with a key of "id" (all lowercase).</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
-        /// <returns>ServiceResult of T</returns>
+        /// <returns>ServiceResult</returns>
         public async Task<ServiceResult<string>> GetAsync(string databaseName, string collectionName, object id, Dictionary<string, string> headers = null)
         {
             var url = GetStandardItemUrl(databaseName, collectionName, id.ToString());
@@ -197,7 +197,7 @@ namespace Foundation.Sdk.Services
         /// <param name="id">The id of the object. This parameter must match a property on the object with a key of "id" (all lowercase).</param>
         /// <param name="entity">The entity that will replace the object with the specified id</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
-        /// <returns>ServiceResult of T</returns>
+        /// <returns>ServiceResult</returns>
         public async Task<ServiceResult<string>> ReplaceAsync(string databaseName, string collectionName, object id, string entity, Dictionary<string, string> headers = null)
         {
             var url = GetStandardItemUrl(databaseName, collectionName, id.ToString());
@@ -240,7 +240,7 @@ namespace Foundation.Sdk.Services
         /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="findExpression">The search payload in MongoDB find syntax format; for more information see https://docs.mongodb.com/manual/reference/method/db.collection.find/</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
-        /// <returns>ServiceResult of integer</returns>
+        /// <returns>ServiceResult of long</returns>
         public async Task<ServiceResult<long>> CountAsync(string databaseName, string collectionName, string findExpression, Dictionary<string, string> headers = null)
         {
             try
@@ -307,7 +307,7 @@ namespace Foundation.Sdk.Services
         /// <param name="collectionName">Name of the collection to use for this operation</param>
         /// <param name="entity">The entity to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
-        /// <returns>ServiceResult of T</returns>
+        /// <returns>ServiceResult</returns>
         public async Task<ServiceResult<string>> InsertAsync(string databaseName, string collectionName, string entity, Dictionary<string, string> headers = null) => await InsertAsync(databaseName: databaseName, collectionName: collectionName, id: null, entity: entity, headers: headers);
 
         /// <summary>
@@ -318,7 +318,7 @@ namespace Foundation.Sdk.Services
         /// <param name="id">The id of the object. This parameter must match a property on the object with a key of "_id" (all lowercase).</param>
         /// <param name="entity">The entity to insert</param>
         /// <param name="headers">Optional custom headers to pass through to this request, such as for authorization tokens or correlation Ids</param>
-        /// <returns>ServiceResult of T</returns>
+        /// <returns>ServiceResult</returns>
         public async Task<ServiceResult<string>> InsertAsync(string databaseName, string collectionName, object id, string entity, Dictionary<string, string> headers = null)
         {
             string url = (id != null) ? GetStandardItemUrl(databaseName, collectionName, id.ToString()) : GetStandardCollectionUrl(databaseName, collectionName);
