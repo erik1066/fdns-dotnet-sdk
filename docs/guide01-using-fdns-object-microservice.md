@@ -21,7 +21,7 @@ First, add a package reference to the FDNS .NET Core SDK in your `.csproj` file:
 
 ```xml
 <ItemGroup>
-    <PackageReference Include="Foundation.Sdk" Version="0.0.12" />
+    <PackageReference Include="Foundation.Sdk" Version="0.0.13" />
 </ItemGroup>
 ```
 
