@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Formatters;
@@ -14,6 +15,15 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
             SupportedEncodings.Add(UTF8EncodingWithoutBOM);
             SupportedEncodings.Add(UTF16EncodingLittleEndian);
         }
+
+        public JsonRawInputFormatter(IList<string> supportedMediaTypes) : this()
+        {
+            foreach (string supportedMediaType in supportedMediaTypes)
+            {
+                SupportedMediaTypes.Add(supportedMediaType);
+            }
+        }
+
         protected override bool CanReadType(Type type)
         {
             return type == typeof(string);

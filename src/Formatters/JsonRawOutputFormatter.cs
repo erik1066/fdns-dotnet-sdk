@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -14,6 +15,14 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
             SupportedMediaTypes.Add("application/json");
             SupportedEncodings.Add(Encoding.UTF8);
             SupportedEncodings.Add(Encoding.Unicode);
+        }
+
+        public JsonRawOutputFormatter(IList<string> supportedMediaTypes) : this()
+        {
+            foreach (string supportedMediaType in supportedMediaTypes)
+            {
+                SupportedMediaTypes.Add(supportedMediaType);
+            }
         }
 
         public override Task WriteResponseBodyAsync(OutputFormatterWriteContext context, Encoding selectedEncoding)
