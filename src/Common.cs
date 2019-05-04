@@ -100,12 +100,12 @@ namespace Foundation.Sdk
             };
 
             var result = new ServiceResult<SearchResults>(
-                value: searchResults, 
-                status: (int)response.StatusCode, 
-                correlationId: GetCorrelationIdFromHeaders(headers), 
-                message: GetErrorMessage(response, json), 
+                value: searchResults,
+                status: (int)response.StatusCode,
+                correlationId: GetCorrelationIdFromHeaders(headers),
+                message: GetErrorMessage(response, json),
                 servicename: serviceName);
-                
+
             return result;
         }
 
@@ -125,11 +125,11 @@ namespace Foundation.Sdk
             return message;
         }
 
-        public static string GetCorrelationIdFromHeaders(Dictionary<string, string> headers) 
+        public static string GetCorrelationIdFromHeaders(Dictionary<string, string> headers)
         {
             if (headers != null && headers.ContainsKey(CORRELATION_ID_HEADER))
             {
-               return headers[CORRELATION_ID_HEADER];
+                return headers[CORRELATION_ID_HEADER];
             }
             else
             {

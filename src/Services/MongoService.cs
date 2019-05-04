@@ -75,9 +75,9 @@ namespace Foundation.Sdk.Services
                 var json = StringifyDocument(await collection.Find(findDocument).FirstOrDefaultAsync());
 
                 var result = new ServiceResult<string>(
-                    value: json, 
-                    status: json == null ? 404 : 200, 
-                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    value: json,
+                    status: json == null ? 404 : 200,
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers),
                     servicename: _serviceName);
 
                 return result;
@@ -103,7 +103,7 @@ namespace Foundation.Sdk.Services
                 var database = GetDatabase(databaseName);
                 var collection = GetCollection(database, collectionName);
 
-                if (!await DoesCollectionExist(databaseName, collectionName)) 
+                if (!await DoesCollectionExist(databaseName, collectionName))
                 {
                     _logger.LogInformation($"{_serviceName}: Get all failed on {databaseName}/{collectionName}: The collection does not exist");
                     var notFoundResult = GetNotFoundResult(correlationId: Common.GetCorrelationIdFromHeaders(headers), message: $"Collection '{collectionName}' does not exist in database '{databaseName}'");
@@ -119,9 +119,9 @@ namespace Foundation.Sdk.Services
                 }
 
                 var result = new ServiceResult<IEnumerable<string>>(
-                    value: items, 
-                    status: 200, 
-                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    value: items,
+                    status: 200,
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers),
                     servicename: _serviceName);
 
                 return result;
@@ -173,7 +173,7 @@ namespace Foundation.Sdk.Services
 
                 if (id != null)
                 {
-                    (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());                    
+                    (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());
                     if (isObjectId)
                     {
                         document.Set("_id", objectId);
@@ -183,7 +183,7 @@ namespace Foundation.Sdk.Services
                         document.Set("_id", id.ToString());
                     }
                 }
-                
+
                 await collection.InsertOneAsync(document);
                 id = document.GetValue("_id");
                 var result = await GetAsync(databaseName, collectionName, id, headers);
@@ -270,22 +270,22 @@ namespace Foundation.Sdk.Services
             {
                 var database = GetDatabase(databaseName);
                 var collection = GetCollection(database, collectionName);
-                (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());                
+                (var isObjectId, ObjectId objectId) = IsObjectId(id.ToString());
                 BsonDocument findDocument = isObjectId ? new BsonDocument(ID_PROPERTY_NAME, objectId) : new BsonDocument(ID_PROPERTY_NAME, id.ToString());
                 var deleteOneResult = await collection.DeleteOneAsync(findDocument);
 
                 if (deleteOneResult.IsAcknowledged && deleteOneResult.DeletedCount == 1)
                 {
                     return new ServiceResult<int>(
-                        value: (int)deleteOneResult.DeletedCount, 
-                        status: 200, 
+                        value: (int)deleteOneResult.DeletedCount,
+                        status: 200,
                         correlationId: Common.GetCorrelationIdFromHeaders(headers));
                 }
                 else if (deleteOneResult.IsAcknowledged && deleteOneResult.DeletedCount == 0)
                 {
                     return new ServiceResult<int>(
-                        value: 0, 
-                        status: 404, 
+                        value: 0,
+                        status: 404,
                         correlationId: Common.GetCorrelationIdFromHeaders(headers));
                 }
                 else
@@ -317,8 +317,8 @@ namespace Foundation.Sdk.Services
                 var collection = GetCollection(database, collectionName);
 
                 var regexFind = GetRegularExpressionQuery(
-                    collection: collection, 
-                    findExpression: findExpression, 
+                    collection: collection,
+                    findExpression: findExpression,
                     findCriteria: findCriteria);
 
                 var document = await regexFind.ToListAsync();
@@ -341,9 +341,9 @@ namespace Foundation.Sdk.Services
                 };
 
                 var result = new ServiceResult<SearchResults>(
-                    value: searchResults, 
-                    status: 200, 
-                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    value: searchResults,
+                    status: 200,
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers),
                     servicename: _serviceName);
 
                 return result;
@@ -369,9 +369,9 @@ namespace Foundation.Sdk.Services
         {
             string convertedExpression = SearchStringConverter.BuildFindExpressionFromQuery(searchExpression);
             return await FindAsync(
-                databaseName: databaseName, 
-                collectionName: collectionName, 
-                findExpression: convertedExpression, 
+                databaseName: databaseName,
+                collectionName: collectionName,
+                findExpression: convertedExpression,
                 findCriteria: findCriteria,
                 headers: headers);
         }
@@ -389,21 +389,21 @@ namespace Foundation.Sdk.Services
 
             bool collectionExists = await DoesCollectionExist(databaseName, collectionName);
 
-            if (collectionExists) 
+            if (collectionExists)
             {
                 await database.DropCollectionAsync(collectionName);
                 return new ServiceResult<int>(
-                    value: 1, 
-                    status: 200, 
-                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    value: 1,
+                    status: 200,
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers),
                     servicename: _serviceName);
             }
             else
             {
                 return new ServiceResult<int>(
-                    value: 0, 
-                    status: 404, 
-                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    value: 0,
+                    status: 404,
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers),
                     servicename: _serviceName);
             }
         }
@@ -421,7 +421,7 @@ namespace Foundation.Sdk.Services
             var documents = new List<BsonDocument>();
 
             JArray array = JArray.Parse(jsonArray);
-            foreach(JToken o in array.Children<JToken>())
+            foreach (JToken o in array.Children<JToken>())
             {
                 var json = o.ToString();
                 BsonDocument document = BsonDocument.Parse(json);
@@ -430,7 +430,7 @@ namespace Foundation.Sdk.Services
 
             var database = GetDatabase(databaseName);
             var collection = GetCollection(database, collectionName);
-            
+
             await collection.InsertManyAsync(documents);
 
             List<string> ids = new List<string>();
@@ -440,9 +440,9 @@ namespace Foundation.Sdk.Services
             }
 
             return new ServiceResult<IEnumerable<string>>(
-                value: ids, 
-                status: (int)HttpStatusCode.Created, 
-                correlationId: 
+                value: ids,
+                status: (int)HttpStatusCode.Created,
+                correlationId:
                 Common.GetCorrelationIdFromHeaders(headers));
         }
 
@@ -464,8 +464,8 @@ namespace Foundation.Sdk.Services
                 var regexFind = GetRegularExpressionQuery(collection, findExpression, new FindCriteria());
                 var documentCount = await regexFind.CountDocumentsAsync();
                 return new ServiceResult<long>(
-                    value: documentCount, 
-                    status: 200, 
+                    value: documentCount,
+                    status: 200,
                     correlationId: Common.GetCorrelationIdFromHeaders(headers));
             }
             catch (Exception ex)
@@ -495,12 +495,12 @@ namespace Foundation.Sdk.Services
                 FilterDefinition<BsonDocument> filterDefinition = bsonDocument;
 
                 var distinctResults = await collection.DistinctAsync<string>(fieldName, filterDefinition, null);
-                
+
                 var items = distinctResults.ToList();
                 return new ServiceResult<List<string>>(
-                    value: items, 
-                    status: 200, 
-                    correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                    value: items,
+                    status: 200,
+                    correlationId: Common.GetCorrelationIdFromHeaders(headers),
                     servicename: _serviceName);
             }
             catch (Exception ex)
@@ -523,7 +523,7 @@ namespace Foundation.Sdk.Services
             var pipeline = new List<BsonDocument>();
 
             var pipelineOperations = ParseJsonArray(aggregationExpression);
-            foreach(var operation in pipelineOperations)
+            foreach (var operation in pipelineOperations)
             {
                 BsonDocument document = BsonDocument.Parse(operation);
                 pipeline.Add(document);
@@ -532,12 +532,12 @@ namespace Foundation.Sdk.Services
             var database = GetDatabase(databaseName);
             var collection = GetCollection(database, collectionName);
 
-            var result = (await collection.AggregateAsync<BsonDocument> (pipeline)).ToList();
+            var result = (await collection.AggregateAsync<BsonDocument>(pipeline)).ToList();
             var stringifiedDocument = result.ToJson(_jsonWriterSettings);
             return new ServiceResult<string>(
-                value: stringifiedDocument, 
-                status: 200, 
-                correlationId: Common.GetCorrelationIdFromHeaders(headers), 
+                value: stringifiedDocument,
+                status: 200,
+                correlationId: Common.GetCorrelationIdFromHeaders(headers),
                 servicename: _serviceName);
         }
 
@@ -597,7 +597,7 @@ namespace Foundation.Sdk.Services
             var database = GetDatabase(databaseName);
 
             var filter = new BsonDocument("name", collectionName);
-            var collectionCursor = await database.ListCollectionsAsync(new ListCollectionsOptions {Filter = filter});
+            var collectionCursor = await database.ListCollectionsAsync(new ListCollectionsOptions { Filter = filter });
             var exists = await collectionCursor.AnyAsync();
             return exists;
         }
@@ -630,7 +630,7 @@ namespace Foundation.Sdk.Services
         }
 
         private IFindFluent<BsonDocument, BsonDocument> GetRegularExpressionQuery(
-            IMongoCollection<MongoDB.Bson.BsonDocument> collection, 
+            IMongoCollection<MongoDB.Bson.BsonDocument> collection,
             string findExpression,
             FindCriteria findCriteria)
         {

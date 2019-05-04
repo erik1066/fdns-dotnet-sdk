@@ -16,16 +16,16 @@ namespace Foundation.Sdk
         public string URI { get; set; } = string.Empty;
         public T Value { get; }
         public string ServiceName { get; set; } = string.Empty;
-        public bool IsSuccess 
+        public bool IsSuccess
         {
-            get 
+            get
             {
                 if (Details.Status >= 200 && Details.Status <= 299) return true;
                 else return false;
             }
         }
         public string CorrelationId { get; set; }
-        public int Status 
+        public int Status
         {
             get
             {
@@ -69,8 +69,8 @@ namespace Foundation.Sdk
             };
         }
 
-        public TValue GetTypedItem<TValue>() where TValue : class 
-        {            
+        public TValue GetTypedItem<TValue>() where TValue : class
+        {
             var item = JsonConvert.DeserializeObject<TValue>(Value.ToString());
             return item;
         }
@@ -118,7 +118,7 @@ namespace Foundation.Sdk
                 case 415:
                     return "https://tools.ietf.org/html/rfc7231#section-6.5.13";
                 default:
-                    return string.Empty;                    
+                    return string.Empty;
             }
         }
     }

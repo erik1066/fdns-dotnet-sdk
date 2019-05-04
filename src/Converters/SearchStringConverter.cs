@@ -18,55 +18,55 @@ namespace Foundation.Sdk.Converters
         /// </summary>
         /// <param name="qs">Google-like search query. Ex: pages>400 title:"The Red Badge of Courage"</param>
         /// <returns>MongoDB find syntax. Ex: { pages: { $gt: 400 }, title:"The Red Badge of Courage" }</returns>
-	    public static string BuildFindExpressionFromQuery(string qs) 
+	    public static string BuildFindExpressionFromQuery(string qs)
         {
             if (string.IsNullOrEmpty(qs))
             {
                 return string.Empty;
             }
 
-		    JObject json = new JObject();
-            
-		    string[] terms = GetSearchTerms(qs); 
+            JObject json = new JObject();
+
+            string[] terms = GetSearchTerms(qs);
 
             foreach (var term in terms)
-            {			
-                if (term.Contains(">=")) 
+            {
+                if (term.Contains(">="))
                 {
                     (string fieldName, string rawValue) = Split(term, ">=");
                     AddNumberComparisonProperty(json, fieldName, rawValue, "gte");
                 }
-                else if (term.Contains("<=")) 
+                else if (term.Contains("<="))
                 {
                     (string fieldName, string rawValue) = Split(term, "<=");
                     AddNumberComparisonProperty(json, fieldName, rawValue, "lte");
                 }
-                else if (term.Contains(">")) 
+                else if (term.Contains(">"))
                 {
                     (string fieldName, string rawValue) = Split(term, ">");
                     AddNumberComparisonProperty(json, fieldName, rawValue, "gt");
                 }
-                else if (term.Contains("<")) 
+                else if (term.Contains("<"))
                 {
                     (string fieldName, string rawValue) = Split(term, "<");
                     AddNumberComparisonProperty(json, fieldName, rawValue, "lt");
                 }
-                else if (term.Contains("!:")) 
+                else if (term.Contains("!:"))
                 {
                     BuildQueryNotEqualTo(json, term);
                 }
-                else if (term.Contains(":")) 
+                else if (term.Contains(":"))
                 {
                     (string fieldName, string rawValue) = Split(term, ":");
-                    
+
                     // convert types
                     if (IsNumber(rawValue))
                     {
-                        json.Add(fieldName, new JValue(Double.Parse(rawValue)));                    
+                        json.Add(fieldName, new JValue(Double.Parse(rawValue)));
                     }
                     else if (IsBoolean(rawValue))
                     {
-                        json.Add(fieldName, new JValue(bool.Parse(rawValue)));                    
+                        json.Add(fieldName, new JValue(bool.Parse(rawValue)));
                     }
                     else
                     {
@@ -78,7 +78,7 @@ namespace Foundation.Sdk.Converters
 
             return json.ToString(Newtonsoft.Json.Formatting.None);
         }
-        
+
         // check if a number
         private static bool IsNumber(string str) => System.Text.RegularExpressions.Regex.Match(str, "-?\\d+(\\.\\d+)?").Success;
 
@@ -86,35 +86,35 @@ namespace Foundation.Sdk.Converters
         private static bool IsBoolean(string str) => System.Text.RegularExpressions.Regex.Match(str, "true|false").Success;
 
         // build a comparison
-        private static JObject BuildComparison(string op, object value) => new JObject( new JProperty("$" + op, value) );
+        private static JObject BuildComparison(string op, object value) => new JObject(new JProperty("$" + op, value));
 
         // merge two JObjects
-	    private static JObject MergeObjects(JToken source, JObject target)
+        private static JObject MergeObjects(JToken source, JObject target)
         {
             target.Merge(source, new JsonMergeSettings { MergeArrayHandling = MergeArrayHandling.Union });
             return target;
         }
 
         // build and merge a comparison
-        private static JObject BuildAndMergeComparison(string op, string field, object raw, JObject json) 
+        private static JObject BuildAndMergeComparison(string op, string field, object raw, JObject json)
         {
             JObject comparison = BuildComparison(op, raw);
 
             // if the field exists then merge it first
-            if (json.ContainsKey(field)) 
+            if (json.ContainsKey(field))
             {
                 JObject merged = MergeObjects(json[field], comparison);
                 return merged;
-            } 
-            else 
+            }
+            else
             {
                 return comparison;
             }
         }
 
-        private static (string fieldName, string rawValue) Split(string term, string splitValue) 
+        private static (string fieldName, string rawValue) Split(string term, string splitValue)
         {
-            string [] parts = term.Split(new string[] { splitValue }, StringSplitOptions.None);
+            string[] parts = term.Split(new string[] { splitValue }, StringSplitOptions.None);
             string field = parts[0];
             string raw = parts[1];
             return (field, raw);
@@ -188,7 +188,7 @@ namespace Foundation.Sdk.Converters
                 AddNumberComparisonProperty(json, fieldName, rawValue, "ne");
             }
             else if (IsBoolean(rawValue))
-            {                
+            {
                 json.Add(fieldName, new JObject(BuildAndMergeComparison("ne", fieldName, bool.Parse(rawValue), json)));
             }
             else

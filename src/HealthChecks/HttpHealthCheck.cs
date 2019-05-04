@@ -70,7 +70,7 @@ namespace Foundation.Sdk.HealthChecks
         /// <param name="degradationThreshold">The threshold in milliseconds after which to consider the service degraded</param>
         /// <param name="cancellationThreshold">The threshold in milliseconds after which to cancel the check and consider the service unavailable</param>
         public HttpHealthCheck(string description, string url, IHttpClientFactory clientFactory, int degradationThreshold = 1000, int cancellationThreshold = 2000)
-            : this (description, url, clientFactory.CreateClient(description), degradationThreshold, cancellationThreshold)
+            : this(description, url, clientFactory.CreateClient(description), degradationThreshold, cancellationThreshold)
         { }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace Foundation.Sdk.HealthChecks
                 var sw = new Stopwatch();
                 sw.Start();
 
-                try 
+                try
                 {
                     HttpStatusCode status;
                     bool isSuccessCode = false;
@@ -102,10 +102,10 @@ namespace Foundation.Sdk.HealthChecks
                     sw.Stop();
                     var elapsed = sw.Elapsed.TotalMilliseconds.ToString("N0");
 
-                    var data = new Dictionary<string, object> 
-                    { 
+                    var data = new Dictionary<string, object>
+                    {
                         ["elapsed"] = elapsed,
-                        ["httpStatusCode"] = (int)status 
+                        ["httpStatusCode"] = (int)status
                     };
 
                     if (!isSuccessCode)
@@ -120,7 +120,7 @@ namespace Foundation.Sdk.HealthChecks
                             data: data,
                             description: $"{_description} probe took more than {_degradationThreshold} ms");
                     }
-                    else 
+                    else
                     {
                         checkResult = HealthCheckResult.Healthy(
                             data: data,

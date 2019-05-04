@@ -70,8 +70,8 @@ namespace Foundation.Sdk.Services
         /// <param name="logger">The logger to use</param>
         public HttpObjectService(string appName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger)
             : this(
-                appName: appName, 
-                client: clientFactory.CreateClient($"{appName}-{Common.OBJECT_SERVICE_NAME}"), 
+                appName: appName,
+                client: clientFactory.CreateClient($"{appName}-{Common.OBJECT_SERVICE_NAME}"),
                 logger: logger)
         { }
 
@@ -82,7 +82,7 @@ namespace Foundation.Sdk.Services
         /// <param name="clientFactory">The Http client factory to use for creating Http clients</param>
         /// <param name="logger">The logger to use</param>
         /// <param name="jsonSerializerSettings">Customer Json serializer</param>
-        public HttpObjectService(string appName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger, JsonSerializerSettings jsonSerializerSettings) 
+        public HttpObjectService(string appName, IHttpClientFactory clientFactory, ILogger<HttpObjectService> logger, JsonSerializerSettings jsonSerializerSettings)
             : this(appName, clientFactory, logger)
         {
             JsonSerializerSettings = jsonSerializerSettings;
@@ -322,7 +322,7 @@ namespace Foundation.Sdk.Services
         public async Task<ServiceResult<string>> InsertAsync(string databaseName, string collectionName, object id, string entity, Dictionary<string, string> headers = null)
         {
             string url = (id != null) ? GetStandardItemUrl(databaseName, collectionName, id.ToString()) : GetStandardCollectionUrl(databaseName, collectionName);
-            
+
             try
             {
                 if (string.IsNullOrEmpty(entity))
@@ -425,7 +425,7 @@ namespace Foundation.Sdk.Services
             {
                 _logger.LogError(ex, $"{Common.GetLogPrefix(Common.OBJECT_SERVICE_NAME, Common.GetCorrelationIdFromHeaders(headers))}: Aggregate failed on {_client.BaseAddress}{url}");
                 throw;
-            }            
+            }
         }
 
         /// <summary>
@@ -524,7 +524,7 @@ namespace Foundation.Sdk.Services
             if (values.ContainsKey(ID_PROPERTY_NAME))
             {
                 object idValue = values[ID_PROPERTY_NAME];
-                if ( !(idValue is string) && idValue.GetType() != typeof(object) && idValue.GetType() != typeof(Newtonsoft.Json.Linq.JObject))
+                if (!(idValue is string) && idValue.GetType() != typeof(object) && idValue.GetType() != typeof(Newtonsoft.Json.Linq.JObject))
                 {
                     throw new InvalidOperationException("_id value must be a string or an OID");
                 }
